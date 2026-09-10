@@ -1,0 +1,26 @@
+# --- Secrets : ne doit JAMAIS partir sur GitHub ---
+*.key
+technician.key
+*.token
+secrets.*
+Config.local.pq
+
+# --- Classeurs Excel (contiennent des donnees SDP + potentiellement la cle) ---
+*.xlsx
+*.xlsm
+*.xlsb
+~$*
+
+# --- Divers Windows ---
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- Config contenant les vraies valeurs d environnement ---
+*.local.pq
+
+# --- Deny-list du hook pre-commit (contient les vraies valeurs) ---
+denylist.local
+
+# --- Hooks git : locaux uniquement, non distribues ---
+.githooks/

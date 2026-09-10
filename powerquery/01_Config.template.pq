@@ -1,0 +1,62 @@
+// ============================================================
+// Requête : Config
+// Type    : requête "record" (Connexion uniquement)
+// Rôle    : point unique de vérité pour tout ce qui est environnement.
+//           Aucune autre requête ne doit contenir d'URL ou de constante.
+//
+// CE FICHIER EST UN MODELE, VERSIONNE ET PUBLIC.
+// Il ne doit contenir AUCUNE valeur reelle : ni nom d'hote, ni chemin
+// reseau, ni nom de champ personnalise interne.
+//
+// Les vraies valeurs vivent dans 01_Config.local.pq, ignore par git.
+// Dans Excel il n'y a qu'UNE seule requete nommee "Config" : tu y colles
+// le contenu de ta version .local. Le modele ci-dessous sert de reference
+// de structure et de documentation.
+// ============================================================
+[
+    // --- API REST ---------------------------------------------------------
+    // IMPORTANT : cette valeur doit rester une CONSTANTE LITTERALE.
+    // C'est elle que Power Query enregistre comme "source de donnees".
+    // Le slash final est necessaire pour que RelativePath se concatene bien.
+    ApiBaseURL   = "https://sdp.example.local/api/v3/",
+
+    // Taille de page. 100 est le defaut SDP. Monter a 500 divise le nombre
+    // d'appels par 5 sur la CMDB / les assets. Certains builds plafonnent
+    // silencieusement a 100 : verifie le nombre de lignes apres changement.
+    PageSize     = 100,
+
+    // --- Interface web (pour construire les liens vers les tickets) -------
+    // NE DEVINE PAS ce modele : ouvre un ticket dans ton navigateur et copie
+    // l'URL reelle. Les deux formes existantes selon la version :
+    //   ancienne : https://<hote>/WorkOrder.do?woMode=viewWO&woID=12345
+    //   nouvelle : https://<hote>/app/itdesk/ui/requests/12345/details
+    WebBaseURL   = "https://sdp.example.local",
+    TicketUrlFmt = "/WorkOrder.do?woMode=viewWO&woID=",   // & id
+    TicketUrlSuf = "",
+    // TicketUrlFmt = "/app/itdesk/ui/requests/",
+    // TicketUrlSuf = "/details",
+
+    // --- Dossiers reseau --------------------------------------------------
+    FolderRoot   = "\fileserver",
+    FolderPrefix = "ID_",          // => \fileserver\ID_12345
+
+    // --- Filtre des tickets ----------------------------------------------
+    // Nom de la vue SDP. Si l'API refuse le nom, il faut son id.
+    // Voir 90_Discover.pq > Dx_Filters pour la lister.
+    TicketFilterName = "MY_VIEW",
+    TicketFilterId   = null,       // renseigne-le si le nom ne passe pas
+
+    // --- Champs personnalises CMDB ---------------------------------------
+    // Liste de paires { nom_api_udf, libelle_colonne }.
+    // Le rapport CMDB est generique : il boucle sur cette liste. Ajouter un
+    // UDF = ajouter une ligne ici, sans toucher au code du rapport.
+    CmdbUdfFields = {
+        { "udf_example_1", "Exemple 1" },
+        { "udf_example_2", "Exemple 2" }
+    },
+
+    // --- Garde-fou performance -------------------------------------------
+    // Nombre max de tickets pour lesquels on va chercher les worklogs.
+    // Mets 25 pendant la mise au point, sinon chaque essai coute 10 minutes.
+    WorklogTicketLimit = null      // null = tous
+]
