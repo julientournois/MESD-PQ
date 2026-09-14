@@ -1,0 +1,38 @@
+// ============================================================
+// Requête : fnCmdbTable
+// Type    : fonction (Connexion uniquement)
+// Rôle    : la CMDB complete, mise en forme. Source unique pour tous les
+//           rapports CMDB (Rpt_CMDB, Rpt_CMDBServers...). Ajouter une
+//           colonne ici la propage partout.
+//
+// Colonnes : Name, Module, ModuleInterne, Description, Site, + UDF de
+//            Config[CmdbUdfFields].
+// ModuleInterne = module.name (ex: cmdb_physicalserver), utile pour
+// filtrer sans dependre du libelle affiche.
+// ============================================================
+() as table =>
+let
+    Raw  = fnSdpFetch("cmdb", null, null),
+    Base = Table.FromList(Raw, Splitter.SplitByNothing(), {"r"}),
+
+    T01 = Table.AddColumn(Base, "Name",          each Record.FieldOrDefault([r], "name", null), type text),
+    T02 = Table.AddColumn(T01,  "Module",        each
+              let M = Record.FieldOrDefault([r], "module", null)
+              in  if M is record
+                  then Record.FieldOrDefault(M, "display_name", Record.FieldOrDefault(M, "name", null))
+                  else null, type text),
+    T03 = Table.AddColumn(T02,  "ModuleInterne", each fnSdpName([r], "module"), type text),
+    T04 = Table.AddColumn(T03,  "Description",   each fnStripHtml(Record.FieldOrDefault([r], "description", null)), type text),
+    T05 = Table.AddColumn(T04,  "Site",          each fnSdpName([r], "site"), type text),
+
+    WithUdf = List.Accumulate(
+        Config[CmdbUdfFields],
+        T05,
+        (tbl, u) => Table.AddColumn(tbl, u{1}, (row) => fnSdpUdf(row[r], u{0}), type text)
+    ),
+
+    Final = Table.SelectColumns(WithUdf,
+        {"Name", "Module", "ModuleInterne", "Description", "Site"}
+        & List.Transform(Config[CmdbUdfFields], each _{1}))
+in
+    Final

@@ -57,6 +57,11 @@
         { "udf_example_3", "Exemple 3" }
     },
 
+    // --- Modules CMDB consideres comme serveurs (Rpt_CMDBServers) --------
+    // Compare au nom interne ET au libelle, sans casse. Plusieurs variantes
+    // possibles = plusieurs entrees.
+    CmdbServerModules = { "cmdb_physicalserver", "cmdb_virtualserver" },
+
     // --- Champs personnalises CMDB ---------------------------------------
     // Liste de paires { nom_api_udf, libelle_colonne }.
     // Le rapport CMDB est generique : il boucle sur cette liste. Ajouter un
