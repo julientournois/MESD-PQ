@@ -8,7 +8,7 @@
 // dans l'ordre :
 //   1. rec.udf_fields.<nom>          (requests, cmdb)
 //   2. rec.<nom>                     (a plat a la racine)
-//   3. rec.<n'importe quel sous-record>.<nom>   (ex: rec.asset.udf_fields)
+//   3. rec.<n importe quel sous-record>.<nom>   (assets : rec.ci_default_fields)
 //      a un niveau de profondeur, puis deux.
 // Usage : fnSdpUdf([r], "udf_sline_609")
 // ============================================================
