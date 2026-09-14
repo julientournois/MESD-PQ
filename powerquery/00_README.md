@@ -62,11 +62,24 @@ sert que de référence de structure et de documentation.
       ton navigateur. Deux formats coexistent selon la version SDP.
 - [ ] Créer le fichier de clé technicien (`C:\SDP\technician.key` par défaut).
 - [ ] `WorklogTicketLimit = 25` pour les essais.
-- [ ] Confidentialité : Données > Requêtes et connexions > Options de requête >
+- [ ] **Pare-feu de confidentialité — obligatoire, sinon RIEN ne fonctionne.**
+      Données > Obtenir des données > Options de requête > *Classeur actuel* >
       Confidentialité > **Ignorer les niveaux de confidentialité**.
-      Sans ça, `Rpt_TicketsIT` échoue : il injecte l'ID de ticket (issu d'une
-      première requête) dans le chemin d'une seconde requête, ce que le
-      pare-feu de confidentialité bloque par défaut.
+
+      Pourquoi : `ApiKey` lit un fichier (`File.Contents`) et `fnSdpFetch`
+      appelle l'API (`Web.Contents`). Deux sources combinées dans une même
+      évaluation = erreur `Formula.Firewall` (« la requête fait référence à
+      d'autres requêtes ou étapes, elle ne peut donc pas accéder directement
+      à une source de données »). Le réglage désactive ce contrôle pour ce
+      classeur uniquement.
+
+      Si l'erreur persiste : Paramètres de la source de données > sélectionner
+      l'hôte SDP et le dossier de la clé > **Effacer les autorisations**, puis
+      actualiser (répondre *Anonyme* pour l'API : l'auth passe par le header).
+
+      Alternative sans ce réglage : mettre la clé dans un paramètre de requête
+      (option B de `02_ApiKey.pq`). Une seule source = pas de pare-feu, mais
+      clé en clair dans le classeur.
 
 ## Les liens cliquables : la vérité
 
