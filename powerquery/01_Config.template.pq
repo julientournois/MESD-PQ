@@ -42,7 +42,7 @@
 
     // --- Filtre des tickets ----------------------------------------------
     // Nom de la vue SDP. Si l'API refuse le nom, il faut son id.
-    // Voir 90_Discover.pq > Dx_Filters pour la lister.
+    // Voir 90_Dx_Filters.pq pour la lister.
     TicketFilterName = "MY_VIEW",
     TicketFilterId   = null,       // renseigne-le si le nom ne passe pas
 

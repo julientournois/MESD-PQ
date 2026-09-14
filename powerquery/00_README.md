@@ -22,7 +22,7 @@ fnSdpName         fonction     record lié [id,name] -> texte
 Rpt_CMDB          table        -> feuille
 Rpt_Laptops       table        -> feuille
 Rpt_TicketsIT     table        -> feuille
-Dx_*              diagnostic   à exécuter à la main quand ça casse
+Dx_Filters, Dx_RequestFields, Dx_WorklogSample   diagnostic manuel
 ```
 
 Ajouter un rapport = une requête d'une quinzaine de lignes qui appelle
@@ -52,8 +52,8 @@ sert que de référence de structure et de documentation.
 5. Ordre de création imposé par les dépendances :
    `Config` → `ApiKey` → `fnEpochToDateTime` → `fnSdpDate` → `fnSdpName`
    → `fnStripHtml` → `fnSdpFetch` → les `Rpt_*`.
-6. `05_fnHelpers.pq` contient **trois** requêtes séparées par des commentaires.
-   Ne colle pas le fichier entier dans une seule requête.
+6. **Un fichier = une requête, sans exception.** Le nom à donner est en
+   tête de chaque fichier (`// Requête : ...`).
 
 ## À faire avant le premier refresh
 
@@ -123,7 +123,7 @@ Si ça devient insupportable, les leviers, du plus efficace au moins :
 
 ## Points d'incertitude assumés
 
-Trois choses varient selon le build SDP. `90_Discover.pq` répond aux trois :
+Trois choses varient selon le build SDP. les requêtes `Dx_*` (fichiers `9x_`) répondent aux trois :
 
 1. **`filter_by` par nom vs par id** — selon la version, les vues
    personnalisées ne sont adressables que par `id`. → `Dx_Filters`.
