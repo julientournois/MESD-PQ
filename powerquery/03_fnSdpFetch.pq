@@ -76,7 +76,7 @@ let
                    else if not Record.HasFields(Body, Resolved) then
                        error Error.Record(
                            "SDP.DataKeyNotFound",
-                           "La cle \"" & Resolved & "\" est absente de la reponse de /" & endpoint,
+                           "La cle """" & Resolved & """" est absente de la reponse de /" & endpoint,
                            "Cles presentes : " & Text.Combine(Keys, ", ")
                          & "  |  response_status : "
                          & (try Text.FromBinary(Json.FromValue(Body[response_status])) otherwise "?")
