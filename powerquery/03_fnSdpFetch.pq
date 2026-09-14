@@ -65,9 +65,19 @@ let
             Resolved = if dataKey <> null then dataKey
                        else List.First(List.Select(Keys, each not List.Contains(Envelope, _)), null),
 
+            // Cle demandee explicitement mais absente : on ECHOUE, on ne
+            // renvoie pas une table vide en silence.
             Rows = if Resolved = null then {}
+                   else if not Record.HasFields(Body, Resolved) then
+                       error Error.Record(
+                           "SDP.DataKeyNotFound",
+                           "La cle \"" & Resolved & "\" est absente de la reponse de /" & endpoint,
+                           "Cles presentes : " & Text.Combine(Keys, ", ")
+                         & "  |  response_status : "
+                         & (try Text.FromBinary(Json.FromValue(Body[response_status])) otherwise "?")
+                       )
                    else
-                       let v = Record.FieldOrDefault(Body, Resolved, {})
+                       let v = Record.Field(Body, Resolved)
                        in  if v is list then v else {v},
 
             HasMore = try Body[list_info][has_more_rows] otherwise false
