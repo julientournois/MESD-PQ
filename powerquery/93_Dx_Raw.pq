@@ -26,8 +26,27 @@ let
     ]),
     Status   = Value.Metadata(Response)[Response.Status]?,
     Body     = Json.Document(Response),
+    // Liste a plat de tous les chemins de champs du 1er enregistrement
+    // (ex: "udf_fields.udf_sline_609"). Filtre la liste dans l'apercu pour
+    // savoir OU vit un champ.
+    DataKey  = List.First(List.Select(Record.FieldNames(Body),
+                   each not List.Contains({"response_status","list_info"}, _)), null),
+    FirstRec = if DataKey = null then null
+               else let v = Record.Field(Body, DataKey)
+                    in if v is list then List.First(v, null) else v,
+    Paths    = (R as any, prefix as text) as list =>
+        if not (R is record) then {}
+        else List.Combine(List.Transform(Record.FieldNames(R), each
+                 let full = if prefix = "" then _ else prefix & "." & _,
+                     v    = Record.Field(R, _)
+                 in  if v is record then {full} & @Paths(v, full) else {full})),
+    ChampsPremierEnregistrement = if FirstRec = null then {} else Paths(FirstRec, ""),
+
     Summary  = [
         HttpStatus      = Status,
+        CleDonnees      = DataKey,
+        ChampsPremierEnregistrement = ChampsPremierEnregistrement,
+        PremierEnregistrement       = FirstRec,
         InputDataEnvoye = Payload,
         ClesReponse     = Text.Combine(Record.FieldNames(Body), ", "),
         ResponseStatus  = Record.FieldOrDefault(Body, "response_status", null),
