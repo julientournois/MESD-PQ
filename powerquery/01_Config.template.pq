@@ -46,6 +46,11 @@
     TicketFilterName = "MY_VIEW",
     TicketFilterId   = null,       // renseigne-le si le nom ne passe pas
 
+    // --- Filtre assets (cote client : search_criteria est ignore par /assets) --
+    // Libelles de type de produit a conserver, insensible a la casse.
+    // Liste vide = aucun filtre (utile pour decouvrir les libelles reels).
+    AssetTypeFilter = { "Laptop" },
+
     // --- Champs personnalises CMDB ---------------------------------------
     // Liste de paires { nom_api_udf, libelle_colonne }.
     // Le rapport CMDB est generique : il boucle sur cette liste. Ajouter un
