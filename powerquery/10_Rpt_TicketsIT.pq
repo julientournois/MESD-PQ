@@ -48,9 +48,7 @@ let
     C07 = Table.AddColumn(C06, "URL_Ticket", each
               Config[WebBaseURL] & Config[TicketUrlFmt] & [ID] & Config[TicketUrlSuf],
               type text),
-    C08 = Table.AddColumn(C07, "Dossier_Reseau", each
-              Config[FolderRoot] & "\" & Config[FolderPrefix] & [ID],
-              type text),
+    C08 = Table.AddColumn(C07, "Dossier_Reseau", each fnTicketFolder([ID]), type text),
 
     // Buffer AVANT la boucle worklogs : evite que Power Query re-evalue
     // la liste des tickets a chaque ligne (sinon N appels deviennent N x N).

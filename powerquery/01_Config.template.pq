@@ -38,7 +38,9 @@
 
     // --- Dossiers reseau --------------------------------------------------
     FolderRoot   = "\fileserver",
-    FolderPrefix = "ID_",          // => \fileserver\ID_12345
+    FolderPrefix = "ID_",
+    // Les dossiers sont ranges par tranches : \fileserver\ID_10000_TO_19999\ID_12345
+    FolderBucketSize = 10000,
 
     // --- Filtre des tickets ----------------------------------------------
     // Nom de la vue SDP. Si l'API refuse le nom, il faut son id.

@@ -20,6 +20,7 @@ fnSdpDate         fonction     record de date SDP -> datetime local
 fnSdpName         fonction     record lié [id,name] -> texte
 fnSdpUdf          fonction     champ personnalisé -> texte
 fnCmdbTable       fonction     la CMDB mise en forme, source des Rpt_CMDB*
+fnTicketFolder    fonction     id ticket -> chemin UNC par tranche
 --------------------------------------------------------------------
 Rpt_CMDB          table        -> feuille
 Rpt_CMDBServers   table        -> feuille (modules serveurs seulement)
@@ -54,7 +55,7 @@ sert que de référence de structure et de documentation.
    ce qui n'est pas `Rpt_*`.
 5. Ordre de création imposé par les dépendances :
    `Config` → `ApiKey` → `fnEpochToDateTime` → `fnSdpDate` → `fnSdpName`
-   → `fnSdpUdf` → `fnStripHtml` → `fnSdpFetch` → `fnCmdbTable` → les `Rpt_*`.
+   → `fnSdpUdf` → `fnStripHtml` → `fnSdpFetch` → `fnCmdbTable` → `fnTicketFolder` → les `Rpt_*`.
 6. **Un fichier = une requête, sans exception.** Le nom à donner est en
    tête de chaque fichier (`// Requête : ...`).
 
@@ -155,7 +156,14 @@ rapides.
 
 ## Convention de dossier réseau
 
-Le rapport tickets construit `FolderRoot \ FolderPrefix + ID`, soit par défaut
-`\\fileserver\ID_12345`. Si la convention réelle diffère (sous-dossier par
-année, par technicien, ID complété sur 6 chiffres…), ajuster `FolderPrefix`
-dans la config et l'étape `C08` de `10_Rpt_TicketsIT.pq`.
+Les dossiers de tickets sont rangés par tranches de `FolderBucketSize`
+(10 000 par défaut) :
+
+```
+\fileserver\ID_10000_TO_19999\ID_12345
+\fileserver\ID_0_TO_9999\ID_7
+```
+
+La construction est dans `fnTicketFolder`. Hypothèse à vérifier sur le
+partage réel : les bornes ne sont pas complétées par des zéros. Si tu vois
+`ID_00000_TO_09999`, adapte la fonction `Pad` dans `fnTicketFolder`.
