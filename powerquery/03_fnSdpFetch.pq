@@ -24,9 +24,14 @@ let
 
     GetPage = (startIndex as number) as record =>
         let
-            // Record.Combine : la derniere occurrence gagne, donc row_count /
-            // start_index ne peuvent pas etre ecrases par l'appelant.
+            // Record.Combine : la derniere occurrence gagne.
+            //  - un tri par defaut sur "id" : sans ordre STABLE, SDP pagine
+            //    n'importe comment (doublons en page N, lignes manquantes en
+            //    page N+1). L'appelant peut le remplacer via listInfo.
+            //  - row_count / start_index sont imposes en dernier : l'appelant
+            //    ne peut pas casser la pagination.
             Info = Record.Combine({
+                [ sort_field = "id", sort_order = "asc" ],
                 Extra,
                 [ row_count = PageSize, start_index = startIndex ]
             }),

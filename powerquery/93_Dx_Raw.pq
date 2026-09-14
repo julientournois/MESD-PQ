@@ -11,7 +11,9 @@ let
     Endpoint = "assets",
     Extra    = [],   // ex : [ search_criteria = [ field = "product.product_type.name", condition = "is", value = "Laptop" ] ]
 
-    Info     = Record.Combine({ Extra, [ row_count = 5, start_index = 1 ] }),
+    // get_total_count : SDP renvoie alors list_info.total_count, a comparer
+    // avec le nombre de lignes du rapport pour detecter doublons / manquants.
+    Info     = Record.Combine({ Extra, [ row_count = 5, start_index = 1, get_total_count = true ] }),
     Payload  = Text.FromBinary(Json.FromValue([ list_info = Info ])),
     Response = Web.Contents(Config[ApiBaseURL], [
         RelativePath = Endpoint,
