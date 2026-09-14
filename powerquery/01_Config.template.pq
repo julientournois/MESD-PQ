@@ -51,6 +51,12 @@
     // Liste vide = aucun filtre (utile pour decouvrir les libelles reels).
     AssetTypeFilter = { "Laptop" },
 
+    // --- Champs personnalises ASSETS -------------------------------------
+    // Meme principe que CmdbUdfFields : paires { nom_api_udf, libelle_colonne }.
+    AssetUdfFields = {
+        { "udf_example_3", "Exemple 3" }
+    },
+
     // --- Champs personnalises CMDB ---------------------------------------
     // Liste de paires { nom_api_udf, libelle_colonne }.
     // Le rapport CMDB est generique : il boucle sur cette liste. Ajouter un

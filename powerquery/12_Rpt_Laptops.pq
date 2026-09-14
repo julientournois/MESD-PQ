@@ -38,18 +38,26 @@ let
 
     // ---------- Colonnes -------------------------------------------------
     T01 = Table.AddColumn(Filtered, "Nom",         each Record.FieldOrDefault([r], "name", null), type text),
-    T02 = Table.AddColumn(T01,      "AssetTag",    each Record.FieldOrDefault([r], "asset_tag", null), type text),
-    T03 = Table.AddColumn(T02,      "NumeroSerie", each Record.FieldOrDefault([r], "serial_number", null), type text),
-    T04 = Table.AddColumn(T03,      "Etat",        each fnSdpName([r], "state"), type text),
-    T05 = Table.AddColumn(T04,      "Utilisateur", each fnSdpName([r], "user"), type text),
-    T06 = Table.AddColumn(T05,      "Site",        each fnSdpName([r], "site"), type text),
-    T07 = Table.AddColumn(T06,      "Produit",     each fnSdpName([r], "product"), type text),
+    T02 = Table.AddColumn(T01,      "NumeroSerie", each Record.FieldOrDefault([r], "org_serial_number", null), type text),
+    T03 = Table.AddColumn(T02,      "Etat",        each fnSdpName([r], "state"), type text),
+    T04 = Table.AddColumn(T03,      "Utilisateur", each fnSdpName([r], "user"), type text),
+    T05 = Table.AddColumn(T04,      "Site",        each fnSdpName([r], "site"), type text),
+    T06 = Table.AddColumn(T05,      "Produit",     each fnSdpName([r], "product"), type text),
+
+    // ---------- Champs personnalises (Config[AssetUdfFields]) ------------
+    // Une colonne par paire { nom_api, libelle }. Lambda explicite (row) =>
+    // pour ne pas masquer la variable de boucle u avec le _ de "each".
+    WithUdf = List.Accumulate(
+        Config[AssetUdfFields],
+        T06,
+        (tbl, u) => Table.AddColumn(tbl, u{1}, (row) => fnSdpUdf(row[r], u{0}), type text)
+    ),
 
     Final = Table.Sort(
-        Table.SelectColumns(T07, {
-            "Nom", "TypeProduit", "Produit", "AssetTag", "NumeroSerie",
-            "Etat", "Utilisateur", "Site"
-        }),
+        Table.SelectColumns(WithUdf,
+            {"Nom", "TypeProduit", "Produit", "NumeroSerie", "Etat", "Utilisateur", "Site"}
+            & List.Transform(Config[AssetUdfFields], each _{1})
+        ),
         {{"Nom", Order.Ascending}}
     )
 in
