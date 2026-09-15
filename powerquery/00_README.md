@@ -28,7 +28,7 @@ Rpt_CMDBServers   table        -> feuille (modules serveurs seulement)
 Rpt_Laptops       table        -> feuille
 Rpt_TicketsIT     table        -> feuille (vue de Config)
 Rpt_TicketsExample  modele     a copier pour un autre filtre
-Dx_Filters, Dx_RequestFields, Dx_WorklogSample, Dx_Raw   diagnostic manuel
+Dx_Filters, Dx_RequestFields, Dx_WorklogSample, Dx_Raw, Dx_Request   diagnostic manuel
 ```
 
 Ajouter un rapport = une requête de quelques lignes. Un rapport tickets avec
