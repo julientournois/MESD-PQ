@@ -29,11 +29,21 @@ let
     T06 = Table.AddColumn(T05, "ID", each Text.From(Record.FieldOrDefault([r], "id", null)), type text),
     // L'URL d'une fiche CI depend du module ET de l'id :
     //   /ui/cmdb_module?ci_type=cmdb_virtual_servers&mode=details&ciid=1234#details
-    // Config[CiUrlFmt] est un modele avec {type} et {id}.
+    // Le ci_type de l'URL n'est PAS le module.name de l'API (ex: API
+    // "cmdb_virtual_server", URL "cmdb_virtual_servers"). La correspondance
+    // est dans Config[CiUrlTypeMap] ; a defaut, on ajoute un "s".
+    fnCiUrlType = (moduleName as nullable text) as nullable text =>
+        if moduleName = null then null
+        else
+            let
+                Hit = List.Select(Config[CiUrlTypeMap], each _{0} = moduleName)
+            in
+                if List.IsEmpty(Hit) then moduleName & "s" else List.First(Hit){1},
+
     T07 = Table.AddColumn(T06, "URL_CI", each
               if [ID] = null or [ModuleInterne] = null then null
               else Config[WebBaseURL]
-                 & Text.Replace(Text.Replace(Config[CiUrlFmt], "{type}", [ModuleInterne]), "{id}", [ID]),
+                 & Text.Replace(Text.Replace(Config[CiUrlFmt], "{type}", fnCiUrlType([ModuleInterne])), "{id}", [ID]),
               type text),
 
     WithUdf = List.Accumulate(

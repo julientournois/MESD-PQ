@@ -43,6 +43,13 @@
     // et {id} = id du CI. Copie l'URL reelle depuis le navigateur en remplacant
     // les deux valeurs.
     CiUrlFmt     = "/ui/cmdb_module?ci_type={type}&mode=details&ciid={id}#details",
+    // Correspondance module.name (API) -> ci_type (URL). Les deux ne sont
+    // pas identiques, ni coherents entre eux. Module absent de la table :
+    // repli = nom API + "s".
+    CiUrlTypeMap = {
+        { "cmdb_physicalserver",  "cmdb_physicalservers" },
+        { "cmdb_virtual_server",  "cmdb_virtual_servers" }
+    },
     // TicketUrlFmt = "/app/itdesk/ui/requests/",
     // TicketUrlSuf = "/details",
 
@@ -75,7 +82,7 @@
     // --- Modules CMDB consideres comme serveurs (Rpt_CMDBServers) --------
     // Compare au nom interne ET au libelle, sans casse. Plusieurs variantes
     // possibles = plusieurs entrees.
-    CmdbServerModules = { "cmdb_physical_servers", "cmdb_virtual_servers" },
+    CmdbServerModules = { "cmdb_physicalserver", "cmdb_virtual_server" },
 
     // --- Champs personnalises CMDB ---------------------------------------
     // Liste de paires { nom_api_udf, libelle_colonne }.
