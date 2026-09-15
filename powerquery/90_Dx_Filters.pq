@@ -4,46 +4,51 @@
 // their Name (the value to put in a filter_by) and their ID.
 //
 // Endpoint : /api/v3/list_view_filters/show_all
-// It does not take a list_info, so it bypasses fnSdpFetch.
-// On this build the endpoint rejects an input_data ("extra key found in
-// json"): the call is made WITHOUT it. A second attempt WITH
-// {"list_view_filters":{"module":"request"}} is kept as a fallback for
-// other builds.
+// input_data shape verified on this build:
+//   { "module": "request",
+//     "list_info": { "row_count": "100",
+//                    "search_criteria": { "field": "module",
+//                                         "value": "request",
+//                                         "condition": "contains" } } }
+// "module" sits at the ROOT, next to list_info - not inside a wrapper.
+// The call bypasses fnSdpFetch, which only knows the list_info envelope.
 // ============================================================
 let
-    Headers = [
-        #"Accept"         = "application/vnd.manageengine.sdp.v3+json",
-        #"TECHNICIAN_KEY" = ApiKey
-    ],
+    Module   = "request",
+    RowCount = 500,   // views are few; raise if the list looks truncated
 
-    Call = (query as nullable record) as record =>
-        let
-            Opts = [
-                RelativePath         = "list_view_filters/show_all",
-                Headers              = Headers,
-                ManualStatusHandling = {400, 401, 403, 404, 405, 500, 503}
-            ],
-            Opts2    = if query = null then Opts else Record.AddField(Opts, "Query", query),
-            Response = Web.Contents(Config[ApiBaseURL], Opts2),
-            Status   = Value.Metadata(Response)[Response.Status]?,
-            Body     = Json.Document(Response),
-            Ok       = (Status = null or Status < 400) and Record.HasFields(Body, "list_view_filters")
-        in
-            [ Ok = Ok, Body = Body, Status = Status,
-              Text = try Text.FromBinary(Response) otherwise "" ],
+    Payload = Text.FromBinary(Json.FromValue([
+        module    = Module,
+        list_info = [
+            row_count       = Text.From(RowCount),
+            search_criteria = [ field = "module", value = Module, condition = "contains" ]
+        ]
+    ])),
 
-    // 1) without input_data
-    A1 = Call(null),
-    // 2) fallback: with module
-    A2 = if A1[Ok] then A1
-         else Call([ input_data = Text.FromBinary(Json.FromValue([ list_view_filters = [ module = "request" ] ])) ]),
+    Response = Web.Contents(Config[ApiBaseURL], [
+        RelativePath         = "list_view_filters/show_all",
+        Query                = [ input_data = Payload ],
+        Headers              = [
+            #"Accept"         = "application/vnd.manageengine.sdp.v3+json",
+            #"TECHNICIAN_KEY" = ApiKey
+        ],
+        ManualStatusHandling = {400, 401, 403, 404, 405, 500, 503}
+    ]),
+    Status = Value.Metadata(Response)[Response.Status]?,
+    Body   = if Status <> null and Status >= 400
+             then error Error.Record(
+                      "SDP.HttpError",
+                      "HTTP " & Text.From(Status) & " on /list_view_filters/show_all",
+                      "sent " & Payload & " -> " & (try Text.FromBinary(Response) otherwise "(unreadable body)"))
+             else Json.Document(Response),
 
-    Raw = if A2[Ok] then A2[Body][list_view_filters]
-          else error Error.Record(
-                   "SDP.ListViewFilters",
-                   "Could not read /list_view_filters/show_all",
-                   "Without input_data -> HTTP " & Text.From(A1[Status]) & ": " & A1[Text]
-                 & "  |  With module -> HTTP " & Text.From(A2[Status]) & ": " & A2[Text]),
+    // Rows live under the first non-envelope key (expected: list_view_filters).
+    Key = List.First(List.Select(Record.FieldNames(Body),
+              each not List.Contains({"response_status", "list_info"}, _)), null),
+    Raw = if Key = null
+          then error Error.Record("SDP.DataKeyNotFound", "No data key in the response",
+                   "Keys present: " & Text.Combine(Record.FieldNames(Body), ", "))
+          else Record.Field(Body, Key),
 
     T = Table.FromList(Raw, Splitter.SplitByNothing(), {"r"}),
     A = Table.AddColumn(T, "Name", each Record.FieldOrDefault([r], "name", null), type text),
