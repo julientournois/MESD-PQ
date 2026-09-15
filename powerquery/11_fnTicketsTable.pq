@@ -32,27 +32,29 @@
 let
     Extras = if extraColumns = null then {} else extraColumns,
 
-    // fields_required must name every field we read. For UDFs, listing
-    // "udf_fields" alone is NOT enough on this build: the UDF comes back
-    // empty unless its own name is listed too. Both are sent.
-    ExtraFields = List.Distinct(List.Combine(List.Transform(Extras, each
-                      if _[kind] = "udf" or _[kind] = "udfdate"
-                      then { "udf_fields", _[field] }
-                      else { _[field] }))),
+    // fields_required trims the payload, but on this build it is
+    // incompatible with UDFs: naming the UDF -> "Invalid input fields",
+    // naming "udf_fields" -> the block comes back empty. So as soon as a
+    // report asks for a UDF, fields_required is dropped and the full record
+    // is fetched. Non-UDF extra fields are simply appended.
+    NeedsUdf    = List.MatchesAny(Extras, each _[kind] = "udf" or _[kind] = "udfdate"),
+    ExtraFields = List.Distinct(List.Transform(Extras, each _[field])),
+
+    BaseFields = {
+        "id", "subject", "status", "priority", "technician",
+        "category", "subcategory", "created_time", "last_updated_time"
+    },
 
     // ---------- 1. Tickets ------------------------------------------------
-    ListInfo = [
+    ListInfoBase = [
         filter_by  = filterBy,
         sort_field = "id",
-        sort_order = "desc",
-        // fields_required greatly reduces the transferred volume.
-        // If your build returns 400 "invalid field", COMMENT this block out:
-        // you get the full record and the rest of the code works unchanged.
-        fields_required = {
-            "id", "subject", "status", "priority", "technician",
-            "category", "subcategory", "created_time", "last_updated_time"
-        } & ExtraFields
+        sort_order = "desc"
     ],
+    // If your build returns 400 "invalid field" on a base field, set
+    // NeedsUdf to true above to always fetch the full record.
+    ListInfo = if NeedsUdf then ListInfoBase
+               else Record.AddField(ListInfoBase, "fields_required", BaseFields & ExtraFields),
 
     Raw = fnSdpFetch("requests", ListInfo, "requests"),
 
