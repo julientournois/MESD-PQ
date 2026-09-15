@@ -58,34 +58,49 @@ let
     // Un appel par ticket. On recupere tous les worklogs (ils sont peu
     // nombreux) et on choisit le plus recent en M : aucune dependance au
     // support du tri cote serveur.
+    //
+    // Un echec d'appel N'EST PAS avale : il est distingue d'un ticket sans
+    // worklog. Sinon une cle expiree ou un SDP indisponible produirait un
+    // rapport "propre" avec des trous invisibles.
     W01 = Table.AddColumn(Buffered, "_wl", each
               try fnSdpFetch(
                       "requests/" & [ID] & "/worklogs",
                       [ fields_required = {"id", "description", "created_time", "owner"} ],
                       "worklogs"
-                  )
-              otherwise {}),
+                  )),
 
     W02 = Table.AddColumn(W01, "_last", each
-              let
-                  Items = if [_wl] is list then [_wl]
-                          else Record.FieldOrDefault([_wl], "Value", {}),
-                  Mapped = List.Transform(Items, each [
-                      dt   = fnSdpDate(Record.FieldOrDefault(_, "created_time", null)),
-                      desc = Record.FieldOrDefault(_, "description", null)
-                  ]),
-                  Dated  = List.Select(Mapped, each [dt] <> null),
-                  Sorted = List.Sort(Dated, {each [dt], Order.Descending})
-              in
-                  if List.IsEmpty(Sorted)
-                  then (if List.IsEmpty(Mapped) then null else List.Last(Mapped))
-                  else List.First(Sorted)),
+              if [_wl][HasError] then
+                  [ dt = null,
+                    desc = "ERREUR APPEL WORKLOGS : "
+                         & (try [_wl][Error][Message] otherwise "?")
+                         & " -- "
+                         & (try Text.From([_wl][Error][Detail]) otherwise ""),
+                    err = true ]
+              else
+                  let
+                      Items  = [_wl][Value],
+                      Mapped = List.Transform(Items, each [
+                          dt   = fnSdpDate(Record.FieldOrDefault(_, "created_time", null)),
+                          desc = Record.FieldOrDefault(_, "description", null),
+                          err  = false
+                      ]),
+                      Dated  = List.Select(Mapped, each [dt] <> null),
+                      Sorted = List.Sort(Dated, {each [dt], Order.Descending})
+                  in
+                      if List.IsEmpty(Sorted)
+                      then (if List.IsEmpty(Mapped) then null else List.Last(Mapped))
+                      else List.First(Sorted)),
 
     W03 = Table.AddColumn(W02, "Date_Dernier_Worklog", each
               if [_last] = null then null else [_last][dt], type datetime),
 
+    // En cas d'erreur, le message brut est ecrit tel quel (pas de nettoyage
+    // HTML) pour rester lisible et filtrable sur "ERREUR".
     W04 = Table.AddColumn(W03, "Dernier_Worklog", each
-              if [_last] = null then null else fnStripHtml([_last][desc]), type text),
+              if [_last] = null then null
+              else if [_last][err] then [_last][desc]
+              else fnStripHtml([_last][desc]), type text),
 
     // ---------- 5. Sortie -------------------------------------------------
     Final = Table.SelectColumns(W04, {
