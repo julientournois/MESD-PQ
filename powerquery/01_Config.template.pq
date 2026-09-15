@@ -37,7 +37,7 @@
     // TicketUrlSuf = "/details",
 
     // --- Dossiers reseau --------------------------------------------------
-    FolderRoot   = "\fileserver",
+    FolderRoot   = "\\fileserver",
     FolderPrefix = "ID_",
     // Tranches de dossiers : 12345 -> \fileserver\ID_12000_TO_12999\ID_12345
     FolderBucketSize = 1000,
