@@ -24,7 +24,7 @@ let
         // If your build returns 400 "invalid field", COMMENT this block out:
         // you get the full record and the rest of the code works unchanged.
         fields_required = {
-            "id", "subject", "status", "technician",
+            "id", "subject", "status", "priority", "technician",
             "category", "subcategory", "created_time", "last_updated_time"
         }
     ],
@@ -43,7 +43,8 @@ let
     C02 = Table.AddColumn(C01,  "Subject",     each fnStripHtml(Record.FieldOrDefault([r], "subject", null)), type text),
     C03 = Table.AddColumn(C02,  "Technician",  each fnSdpName([r], "technician"), type text),
     C04 = Table.AddColumn(C03,  "Status",      each fnSdpName([r], "status"), type text),
-    C05 = Table.AddColumn(C04,  "Category",    each fnSdpName([r], "category"), type text),
+    C04b= Table.AddColumn(C04,  "Priority",    each fnSdpName([r], "priority"), type text),
+    C05 = Table.AddColumn(C04b, "Category",    each fnSdpName([r], "category"), type text),
     C06 = Table.AddColumn(C05,  "Subcategory", each fnSdpName([r], "subcategory"), type text),
 
     // ---------- 3. Links (text; HYPERLINK is built in Excel, see README) --
@@ -111,6 +112,7 @@ let
         "Technician",
         "Subject",
         "Status",
+        "Priority",
         "Category",
         "Subcategory",
         "LastWorklogDate",
