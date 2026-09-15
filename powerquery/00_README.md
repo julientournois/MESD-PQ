@@ -180,7 +180,8 @@ Si ça devient insupportable, les leviers, du plus efficace au moins :
 Trois choses varient selon le build SDP. les requêtes `Dx_*` (fichiers `9x_`) répondent aux trois :
 
 1. **`filter_by` par nom vs par id** — selon la version, les vues
-   personnalisées ne sont adressables que par `id`. → `Dx_Filters`.
+   personnalisées ne sont adressables que par `id`. → `Dx_Filters`
+   (`/list_view_filters/show_all`, renvoie Name et ID des vues).
 2. **Le champ de date du worklog** : `created_time` dans la plupart des cas,
    `start_time` dans certaines configurations. → `Dx_WorklogSample`.
 3. **`fields_required`** sur `/requests` : un build ancien peut renvoyer un
