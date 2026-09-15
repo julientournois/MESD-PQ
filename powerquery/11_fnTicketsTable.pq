@@ -32,10 +32,13 @@
 let
     Extras = if extraColumns = null then {} else extraColumns,
 
-    // fields_required must name every field we read. UDFs come as a block
-    // ("udf_fields"), other fields by their own name.
-    ExtraFields = List.Distinct(List.Transform(Extras, each
-                      if _[kind] = "udf" or _[kind] = "udfdate" then "udf_fields" else _[field])),
+    // fields_required must name every field we read. For UDFs, listing
+    // "udf_fields" alone is NOT enough on this build: the UDF comes back
+    // empty unless its own name is listed too. Both are sent.
+    ExtraFields = List.Distinct(List.Combine(List.Transform(Extras, each
+                      if _[kind] = "udf" or _[kind] = "udfdate"
+                      then { "udf_fields", _[field] }
+                      else { _[field] }))),
 
     // ---------- 1. Tickets ------------------------------------------------
     ListInfo = [
