@@ -39,6 +39,11 @@
     //   nouvelle : /app/itdesk/ui/assets/123/details  (Fmt "/app/itdesk/ui/assets/", Suf "/details")
     AssetUrlFmt  = "/ViewAsset.do?assetId=",
     AssetUrlSuf  = "",
+    // Fiche CI (CMDB). Meme regle : copie l'URL depuis le navigateur.
+    //   ancienne : /ViewCI.do?ciId=123
+    //   nouvelle : /app/itdesk/ui/cmdb/ci/123/details   (a verifier)
+    CiUrlFmt     = "/ViewCI.do?ciId=",
+    CiUrlSuf     = "",
     // TicketUrlFmt = "/app/itdesk/ui/requests/",
     // TicketUrlSuf = "/details",
 

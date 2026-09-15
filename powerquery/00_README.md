@@ -117,6 +117,9 @@ Même principe sur `Rpt_Laptops` avec la colonne `URL_Asset` :
 dans `Config[AssetUrlFmt]` / `AssetUrlSuf` — à copier depuis le navigateur,
 il varie selon la version de SDP.
 
+Et sur `Rpt_CMDB` / `Rpt_CMDBServers` avec `URL_CI` :
+`=HYPERLINK([@URL_CI], [@Name])`, format dans `Config[CiUrlFmt]` / `CiUrlSuf`.
+
 ### Pourquoi ça tient au refresh
 
 Les colonnes calculées font partie du tableau structuré, pas de la requête.

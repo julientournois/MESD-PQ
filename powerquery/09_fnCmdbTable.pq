@@ -5,7 +5,7 @@
 //           rapports CMDB (Rpt_CMDB, Rpt_CMDBServers...). Ajouter une
 //           colonne ici la propage partout.
 //
-// Colonnes : Name, Module, ModuleInterne, Description, Site, + UDF de
+// Colonnes : ID, URL_CI, Name, Module, ModuleInterne, Description, Site, + UDF de
 //            Config[CmdbUdfFields].
 // ModuleInterne = module.name (ex: cmdb_physicalserver), utile pour
 // filtrer sans dependre du libelle affiche.
@@ -25,14 +25,21 @@ let
     T04 = Table.AddColumn(T03,  "Description",   each fnStripHtml(Record.FieldOrDefault([r], "description", null)), type text),
     T05 = Table.AddColumn(T04,  "Site",          each fnSdpName([r], "site"), type text),
 
+    // Lien vers la fiche CI dans SDP (texte ; HYPERLINK cote Excel, cf. README).
+    T06 = Table.AddColumn(T05, "ID", each Text.From(Record.FieldOrDefault([r], "id", null)), type text),
+    T07 = Table.AddColumn(T06, "URL_CI", each
+              if [ID] = null then null
+              else Config[WebBaseURL] & Config[CiUrlFmt] & [ID] & Config[CiUrlSuf],
+              type text),
+
     WithUdf = List.Accumulate(
         Config[CmdbUdfFields],
-        T05,
+        T07,
         (tbl, u) => Table.AddColumn(tbl, u{1}, (row) => fnSdpUdf(row[r], u{0}), type text)
     ),
 
     Final = Table.SelectColumns(WithUdf,
-        {"Name", "Module", "ModuleInterne", "Description", "Site"}
+        {"ID", "URL_CI", "Name", "Module", "ModuleInterne", "Description", "Site"}
         & List.Transform(Config[CmdbUdfFields], each _{1}))
 in
     Final
