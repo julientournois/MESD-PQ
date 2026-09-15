@@ -32,11 +32,13 @@
 let
     Extras = if extraColumns = null then {} else extraColumns,
 
-    // fields_required trims the payload, but on this build it is
-    // incompatible with UDFs: naming the UDF -> "Invalid input fields",
-    // naming "udf_fields" -> the block comes back empty. So as soon as a
-    // report asks for a UDF, fields_required is dropped and the full record
-    // is fetched. Non-UDF extra fields are simply appended.
+    // UDFs are NOT available through the list endpoint on this build,
+    // whatever fields_required says (naming the UDF -> "Invalid input
+    // fields", naming "udf_fields" -> empty block, no fields_required ->
+    // still absent). Only a plain GET /requests/{id} WITHOUT input_data
+    // returns them (see fnSdpGet). So when a report asks for a UDF, one
+    // detail call per ticket is added to the per-ticket loop, and the
+    // udf_fields block from the detail is merged into the row.
     NeedsUdf    = List.MatchesAny(Extras, each _[kind] = "udf" or _[kind] = "udfdate"
                                               or Text.StartsWith(_[field], "udf_")),
     ExtraFields = List.Distinct(List.Transform(Extras, each _[field])),
@@ -52,10 +54,10 @@ let
         sort_field = "id",
         sort_order = "desc"
     ],
-    // If your build returns 400 "invalid field" on a base field, set
-    // NeedsUdf to true above to always fetch the full record.
-    ListInfo = if NeedsUdf then ListInfoBase
-               else Record.AddField(ListInfoBase, "fields_required", BaseFields & ExtraFields),
+    NonUdfFields = List.Select(ExtraFields, each not Text.StartsWith(_, "udf_")),
+    // If your build returns 400 "invalid field" on a base field, replace
+    // the next line with:  ListInfo = ListInfoBase,
+    ListInfo = Record.AddField(ListInfoBase, "fields_required", BaseFields & NonUdfFields),
 
     Raw = fnSdpFetch("requests", ListInfo, "requests"),
 
@@ -74,6 +76,20 @@ let
     C04b= Table.AddColumn(C04,  "Priority",    each fnSdpName([r], "priority"), type text),
     C05 = Table.AddColumn(C04b, "Category",    each fnSdpName([r], "category"), type text),
     C06 = Table.AddColumn(C05,  "Subcategory", each fnSdpName([r], "subcategory"), type text),
+
+    // ---------- 2a. UDFs: per-ticket detail call (only if needed) --------
+    // Replaces [r] by the same record with the detail's udf_fields merged in.
+    // A failed detail call leaves [r] untouched: the UDF columns are then
+    // null for that ticket and LastWorklog will not flag it - acceptable,
+    // the worklog loop below is the one that surfaces auth/availability
+    // problems for the whole run.
+    Enriched = if not NeedsUdf then C06
+               else Table.TransformColumns(C06, {"r", (rec) =>
+                        let d = try fnSdpGet("requests/" & Text.From(rec[id]), "request") otherwise null,
+                            u = if d = null then null else Record.FieldOrDefault(d, "udf_fields", null)
+                        in  if u = null then rec
+                            else Record.Combine({ Record.RemoveFields(rec, {"udf_fields"}, MissingField.Ignore),
+                                                  [ udf_fields = u ] })}),
 
     // ---------- 2b. Report-specific columns ------------------------------
     // Explicit lambda (row) => so the loop variable x is not shadowed by
@@ -99,7 +115,7 @@ let
               else if v is record then Record.FieldOrDefault(v, "display_value", Record.FieldOrDefault(v, "name", null))
               else try Text.From(v) otherwise null),
 
-    C06x = List.Accumulate(Extras, C06, (tbl, x) =>
+    C06x = List.Accumulate(Extras, Enriched, (tbl, x) =>
                Table.AddColumn(tbl, x[label], (row) => fnExtra(row[r], x),
                    if x[kind] = "date" or x[kind] = "udfdate" then type datetime else type text)),
 

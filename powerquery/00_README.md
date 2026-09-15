@@ -22,6 +22,7 @@ fnSdpUdf          fonction     champ personnalisé -> texte
 fnCmdbTable       fonction     la CMDB mise en forme, source des Rpt_CMDB*
 fnTicketFolder    fonction     id ticket -> chemin UNC par tranche
 fnTicketsTable    fonction     le rapport tickets, parametre par le filtre
+fnSdpGet          fonction     GET brut d'un objet sans input_data (UDF des tickets)
 --------------------------------------------------------------------
 Rpt_CMDB          table        -> feuille
 Rpt_CMDBServers   table        -> feuille (modules serveurs seulement)
@@ -64,7 +65,7 @@ sert que de référence de structure et de documentation.
    ce qui n'est pas `Rpt_*`.
 5. Ordre de création imposé par les dépendances :
    `Config` → `ApiKey` → `fnEpochToDateTime` → `fnSdpDate` → `fnSdpName`
-   → `fnSdpUdf` → `fnStripHtml` → `fnSdpFetch` → `fnCmdbTable` → `fnTicketFolder` → `fnTicketsTable` → les `Rpt_*`.
+   → `fnSdpUdf` → `fnStripHtml` → `fnSdpFetch` → `fnCmdbTable` → `fnTicketFolder` → `fnSdpGet` → `fnTicketsTable` → les `Rpt_*`.
 6. **Un fichier = une requête, sans exception.** Le nom à donner est en
    tête de chaque fichier (`// Requête : ...`).
 
