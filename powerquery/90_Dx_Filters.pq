@@ -1,7 +1,7 @@
 // ============================================================
 // Query : Dx_Filters   (DIAGNOSTIC - Connection only, or load it if useful)
 // Lists the request views / filters available to the technician key:
-// their Name (the value to put in a filter_by) and their ID.
+// their DisplayName (UI label), Name (the value for filter_by) and ID.
 //
 // Endpoint : /api/v3/list_view_filters/show_all
 // input_data shape verified on this build:
@@ -51,8 +51,11 @@ let
           else Record.Field(Body, Key),
 
     T = Table.FromList(Raw, Splitter.SplitByNothing(), {"r"}),
-    A = Table.AddColumn(T, "Name", each Record.FieldOrDefault([r], "name", null), type text),
-    B = Table.AddColumn(A, "ID",   each Text.From(Record.FieldOrDefault([r], "id", null)), type text),
-    Final = Table.Sort(Table.SelectColumns(B, {"Name", "ID"}), {{"Name", Order.Ascending}})
+    A = Table.AddColumn(T, "DisplayName", each Record.FieldOrDefault([r], "display_name", null), type text),
+    B = Table.AddColumn(A, "Name",        each Record.FieldOrDefault([r], "name", null), type text),
+    C = Table.AddColumn(B, "ID",          each Text.From(Record.FieldOrDefault([r], "id", null)), type text),
+    // DisplayName = what technicians see in the UI; Name = the API value
+    // to put in fnTicketsTable([ name = "..." ]).
+    Final = Table.Sort(Table.SelectColumns(C, {"DisplayName", "Name", "ID"}), {{"DisplayName", Order.Ascending}})
 in
     Final
