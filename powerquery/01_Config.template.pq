@@ -39,11 +39,10 @@
     //   nouvelle : /app/itdesk/ui/assets/123/details  (Fmt "/app/itdesk/ui/assets/", Suf "/details")
     AssetUrlFmt  = "/ViewAsset.do?assetId=",
     AssetUrlSuf  = "",
-    // Fiche CI (CMDB). Meme regle : copie l'URL depuis le navigateur.
-    //   ancienne : /ViewCI.do?ciId=123
-    //   nouvelle : /app/itdesk/ui/cmdb/ci/123/details   (a verifier)
-    CiUrlFmt     = "/ViewCI.do?ciId=",
-    CiUrlSuf     = "",
+    // Fiche CI (CMDB). Modele avec {type} = nom interne du module (module.name)
+    // et {id} = id du CI. Copie l'URL reelle depuis le navigateur en remplacant
+    // les deux valeurs.
+    CiUrlFmt     = "/ui/cmdb_module?ci_type={type}&mode=details&ciid={id}#details",
     // TicketUrlFmt = "/app/itdesk/ui/requests/",
     // TicketUrlSuf = "/details",
 
@@ -76,7 +75,7 @@
     // --- Modules CMDB consideres comme serveurs (Rpt_CMDBServers) --------
     // Compare au nom interne ET au libelle, sans casse. Plusieurs variantes
     // possibles = plusieurs entrees.
-    CmdbServerModules = { "cmdb_physicalserver", "cmdb_virtualserver" },
+    CmdbServerModules = { "cmdb_physical_servers", "cmdb_virtual_servers" },
 
     // --- Champs personnalises CMDB ---------------------------------------
     // Liste de paires { nom_api_udf, libelle_colonne }.

@@ -27,9 +27,13 @@ let
 
     // Lien vers la fiche CI dans SDP (texte ; HYPERLINK cote Excel, cf. README).
     T06 = Table.AddColumn(T05, "ID", each Text.From(Record.FieldOrDefault([r], "id", null)), type text),
+    // L'URL d'une fiche CI depend du module ET de l'id :
+    //   /ui/cmdb_module?ci_type=cmdb_virtual_servers&mode=details&ciid=1234#details
+    // Config[CiUrlFmt] est un modele avec {type} et {id}.
     T07 = Table.AddColumn(T06, "URL_CI", each
-              if [ID] = null then null
-              else Config[WebBaseURL] & Config[CiUrlFmt] & [ID] & Config[CiUrlSuf],
+              if [ID] = null or [ModuleInterne] = null then null
+              else Config[WebBaseURL]
+                 & Text.Replace(Text.Replace(Config[CiUrlFmt], "{type}", [ModuleInterne]), "{id}", [ID]),
               type text),
 
     WithUdf = List.Accumulate(

@@ -118,7 +118,8 @@ dans `Config[AssetUrlFmt]` / `AssetUrlSuf` — à copier depuis le navigateur,
 il varie selon la version de SDP.
 
 Et sur `Rpt_CMDB` / `Rpt_CMDBServers` avec `URL_CI` :
-`=HYPERLINK([@URL_CI], [@Name])`, format dans `Config[CiUrlFmt]` / `CiUrlSuf`.
+`=HYPERLINK([@URL_CI], [@Name])`. `Config[CiUrlFmt]` est un modèle avec `{type}`
+(nom interne du module) et `{id}`, car l'URL d'un CI dépend des deux.
 
 ### Pourquoi ça tient au refresh
 
