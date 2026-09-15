@@ -8,13 +8,35 @@
 //     [ name = "My_View" ]           view by name
 //     [ id   = "301" ]               view by id (if the name is rejected)
 //
-// Any column added here shows up in every ticket report.
+// extraColumns (optional): report-specific columns, appended after
+// Subcategory. A list of records [ field, label, kind ]:
+//     field : API field name (or UDF name for kind udf / udfdate)
+//     label : Excel column name
+//     kind  : "text"    raw value as text
+//             "name"    linked object [id, name] -> name   (e.g. "group")
+//             "date"    SDP date record -> datetime        (e.g. "due_by_time")
+//             "udf"     custom field -> text               (e.g. "udf_char_1")
+//             "udfdate" custom date field -> datetime      (e.g. "udf_date_1")
+// Example:
+//     fnTicketsTable([ name = "RFC_View" ],
+//                    { [ field = "udf_date_2701", label = "RfcDate", kind = "udfdate" ] })
+//     fnTicketsTable([ name = "CSIOC_View" ],
+//                    { [ field = "due_by_time", label = "DueBy", kind = "date" ] })
+//
+// Any column added to the base here shows up in every ticket report.
 //
 // PERFORMANCE: one HTTP call per ticket for the worklogs. While developing
 // set Config[WorklogTicketLimit] = 25.
 // ============================================================
-(filterBy as record) as table =>
+(filterBy as record, optional extraColumns as nullable list) as table =>
 let
+    Extras = if extraColumns = null then {} else extraColumns,
+
+    // fields_required must name every field we read. UDFs come as a block
+    // ("udf_fields"), other fields by their own name.
+    ExtraFields = List.Distinct(List.Transform(Extras, each
+                      if _[kind] = "udf" or _[kind] = "udfdate" then "udf_fields" else _[field])),
+
     // ---------- 1. Tickets ------------------------------------------------
     ListInfo = [
         filter_by  = filterBy,
@@ -26,7 +48,7 @@ let
         fields_required = {
             "id", "subject", "status", "priority", "technician",
             "category", "subcategory", "created_time", "last_updated_time"
-        }
+        } & ExtraFields
     ],
 
     Raw = fnSdpFetch("requests", ListInfo, "requests"),
@@ -47,8 +69,27 @@ let
     C05 = Table.AddColumn(C04b, "Category",    each fnSdpName([r], "category"), type text),
     C06 = Table.AddColumn(C05,  "Subcategory", each fnSdpName([r], "subcategory"), type text),
 
+    // ---------- 2b. Report-specific columns ------------------------------
+    // Explicit lambda (row) => so the loop variable x is not shadowed by
+    // the _ of "each".
+    fnUdfRaw = (rec as any, name as text) as any =>
+        if rec is record and Record.HasFields(rec, "udf_fields")
+        then Record.FieldOrDefault(rec[udf_fields], name, null) else null,
+
+    fnExtra = (rec as any, x as record) as any =>
+        if x[kind] = "name"    then fnSdpName(rec, x[field])
+        else if x[kind] = "date"    then fnSdpDate(Record.FieldOrDefault(rec, x[field], null))
+        else if x[kind] = "udf"     then fnSdpUdf(rec, x[field])
+        else if x[kind] = "udfdate" then fnSdpDate(fnUdfRaw(rec, x[field]))
+        else (let v = Record.FieldOrDefault(rec, x[field], null)
+              in if v = null then null else try Text.From(v) otherwise null),
+
+    C06x = List.Accumulate(Extras, C06, (tbl, x) =>
+               Table.AddColumn(tbl, x[label], (row) => fnExtra(row[r], x),
+                   if x[kind] = "date" or x[kind] = "udfdate" then type datetime else type text)),
+
     // ---------- 3. Links (text; HYPERLINK is built in Excel, see README) --
-    C07 = Table.AddColumn(C06, "TicketURL", each
+    C07 = Table.AddColumn(C06x, "TicketURL", each
               Config[WebBaseURL] & Config[TicketUrlFmt] & [ID] & Config[TicketUrlSuf],
               type text),
     C08 = Table.AddColumn(C07, "NetworkFolder", each fnTicketFolder([ID]), type text),
@@ -114,7 +155,8 @@ let
         "Status",
         "Priority",
         "Category",
-        "Subcategory",
+        "Subcategory"
+    } & List.Transform(Extras, each _[label]) & {
         "LastWorklogDate",
         "LastWorklog"
     })
