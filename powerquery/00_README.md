@@ -21,16 +21,20 @@ fnSdpName         fonction     record lié [id,name] -> texte
 fnSdpUdf          fonction     champ personnalisé -> texte
 fnCmdbTable       fonction     la CMDB mise en forme, source des Rpt_CMDB*
 fnTicketFolder    fonction     id ticket -> chemin UNC par tranche
+fnTicketsTable    fonction     le rapport tickets, parametre par le filtre
 --------------------------------------------------------------------
 Rpt_CMDB          table        -> feuille
 Rpt_CMDBServers   table        -> feuille (modules serveurs seulement)
 Rpt_Laptops       table        -> feuille
-Rpt_TicketsIT     table        -> feuille
+Rpt_TicketsIT     table        -> feuille (vue de Config)
+Rpt_TicketsExemple  modele     a copier pour un autre filtre
 Dx_Filters, Dx_RequestFields, Dx_WorklogSample   diagnostic manuel
 ```
 
-Ajouter un rapport = une requête d'une quinzaine de lignes qui appelle
-`fnSdpFetch`. Zéro duplication d'URL, de clé ou de pagination.
+Ajouter un rapport = une requête de quelques lignes. Un rapport tickets avec
+un autre filtre : copier `24_Rpt_TicketsExemple.pq` et changer le `filter_by`.
+Un rapport sur un autre endpoint : appeler `fnSdpFetch` et mettre en forme.
+Zéro duplication d'URL, de clé, de pagination ou de logique de colonnes.
 
 ## Configuration : template vs local
 
@@ -55,7 +59,7 @@ sert que de référence de structure et de documentation.
    ce qui n'est pas `Rpt_*`.
 5. Ordre de création imposé par les dépendances :
    `Config` → `ApiKey` → `fnEpochToDateTime` → `fnSdpDate` → `fnSdpName`
-   → `fnSdpUdf` → `fnStripHtml` → `fnSdpFetch` → `fnCmdbTable` → `fnTicketFolder` → les `Rpt_*`.
+   → `fnSdpUdf` → `fnStripHtml` → `fnSdpFetch` → `fnCmdbTable` → `fnTicketFolder` → `fnTicketsTable` → les `Rpt_*`.
 6. **Un fichier = une requête, sans exception.** Le nom à donner est en
    tête de chaque fichier (`// Requête : ...`).
 

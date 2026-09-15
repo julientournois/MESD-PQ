@@ -1,21 +1,20 @@
 // ============================================================
-// Requête : Rpt_TicketsIT   (charger dans une feuille)
-// Rôle    : tickets ouverts d une vue SDP (Config[TicketFilterName]) + dernier worklog.
+// Requête : fnTicketsTable
+// Type    : fonction (Connexion uniquement)
+// Rôle    : LA logique du rapport tickets (colonnes, liens, dernier
+//           worklog). Chaque Rpt_Tickets* l'appelle avec son filtre.
 //
-// ATTENTION PERFORMANCE : un appel HTTP par ticket pour les worklogs.
-// Pendant la mise au point, mets Config[WorklogTicketLimit] = 25.
+// filterBy : le record filter_by de l'API, par exemple
+//     [ name = "Ma_Vue" ]            vue par nom
+//     [ id   = "301" ]               vue par id (si le nom est refuse)
+//
+// Toute colonne ajoutee ici apparait dans tous les rapports tickets.
 // ============================================================
+(filterBy as record) as table =>
 let
     // ---------- 1. Les tickets -------------------------------------------
-    // filter_by accepte le nom de la vue, ou son id selon le build.
-    // Config decide lequel est utilise.
-    FilterBy =
-        if Config[TicketFilterId] <> null
-        then [ id = Config[TicketFilterId] ]
-        else [ name = Config[TicketFilterName] ],
-
     ListInfo = [
-        filter_by  = FilterBy,
+        filter_by  = filterBy,
         sort_field = "id",
         sort_order = "desc",
         // fields_required reduit fortement le volume transfere.
