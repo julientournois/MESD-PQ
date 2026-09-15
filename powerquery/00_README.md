@@ -112,6 +112,11 @@ calculées. Vérifié : elles survivent au refresh.
 
 Excel français : `LIEN_HYPERTEXTE` et `;` comme séparateur.
 
+Même principe sur `Rpt_Laptops` avec la colonne `URL_Asset` :
+`=HYPERLINK([@URL_Asset], [@Nom])`. Le format de l'URL d'une fiche asset est
+dans `Config[AssetUrlFmt]` / `AssetUrlSuf` — à copier depuis le navigateur,
+il varie selon la version de SDP.
+
 ### Pourquoi ça tient au refresh
 
 Les colonnes calculées font partie du tableau structuré, pas de la requête.

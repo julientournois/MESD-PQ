@@ -33,6 +33,12 @@
     WebBaseURL   = "https://sdp.example.local",
     TicketUrlFmt = "/WorkOrder.do?woMode=viewWO&woID=",   // & id
     TicketUrlSuf = "",
+    // Fiche asset. MEME REGLE : ouvre un asset dans le navigateur et copie
+    // l'URL. Formes connues selon la version :
+    //   ancienne : /ViewAsset.do?assetId=123          (Fmt ci-dessous, Suf "")
+    //   nouvelle : /app/itdesk/ui/assets/123/details  (Fmt "/app/itdesk/ui/assets/", Suf "/details")
+    AssetUrlFmt  = "/ViewAsset.do?assetId=",
+    AssetUrlSuf  = "",
     // TicketUrlFmt = "/app/itdesk/ui/requests/",
     // TicketUrlSuf = "/details",
 

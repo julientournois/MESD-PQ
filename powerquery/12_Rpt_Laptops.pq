@@ -45,19 +45,26 @@ let
     T04 = Table.AddColumn(T03,      "Site",        each fnSdpName([r], "site"), type text),
     T05 = Table.AddColumn(T04,      "Produit",     each fnSdpName([r], "product"), type text),
 
+    // Lien vers la fiche asset dans SDP (texte ; HYPERLINK cote Excel, cf. README).
+    T06 = Table.AddColumn(T05, "ID", each Text.From(Record.FieldOrDefault([r], "id", null)), type text),
+    T07 = Table.AddColumn(T06, "URL_Asset", each
+              if [ID] = null then null
+              else Config[WebBaseURL] & Config[AssetUrlFmt] & [ID] & Config[AssetUrlSuf],
+              type text),
+
     // ---------- Champs personnalises (Config[AssetUdfFields]) ------------
     // Une colonne par paire { nom_api, libelle }. Lambda explicite (row) =>
     // pour ne pas masquer la variable de boucle u avec le _ de "each".
     WithUdf = List.Accumulate(
         Config[AssetUdfFields],
-        T05,
+        T07,
         (tbl, u) => Table.AddColumn(tbl, u{1}, (row) => fnSdpUdf(row[r], u{0}), type text)
     ),
 
     // Ordre : identite, produit, UDF (dont le numero de serie), puis statut.
     Final = Table.Sort(
         Table.SelectColumns(WithUdf,
-            {"Nom", "TypeProduit", "Produit"}
+            {"ID", "URL_Asset", "Nom", "TypeProduit", "Produit"}
             & List.Transform(Config[AssetUdfFields], each _{1})
             & {"Etat", "Utilisateur", "Site"}
         ),
