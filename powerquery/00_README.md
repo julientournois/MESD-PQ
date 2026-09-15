@@ -85,35 +85,49 @@ sert que de référence de structure et de documentation.
       (option B de `02_ApiKey.pq`). Une seule source = pas de pare-feu, mais
       clé en clair dans le classeur.
 
-## Les liens cliquables : la vérité
+## Les liens cliquables
 
 **Power Query ne peut pas produire de lien cliquable.** Il produit du texte.
 Il n'existe aucune option M pour ça, et le marquage « Web URL » n'existe qu'en
-Power BI. Les colonnes `URL_Ticket` et `Dossier_Reseau` sortent donc en texte.
+Power BI. Les colonnes `URL_Ticket` et `Dossier_Reseau` sortent donc en texte,
+et les liens sont fabriqués **dans le tableau Excel**, par des colonnes
+calculées. Vérifié : elles survivent au refresh.
 
-Trois façons de les rendre cliquables, par ordre de robustesse :
+### Mise en place (Excel anglais)
 
-**1. Colonnes de formule adjacentes (recommandé)**
-Après chargement du tableau `Rpt_TicketsIT`, dans la première colonne vide à
-droite du tableau :
+1. Sur la feuille de `Rpt_TicketsIT`, clique dans la première cellule vide à
+   droite de la ligne d'en-tête du tableau. Tape `Ticket`, Entrée : le
+   tableau s'étend d'une colonne.
+2. Dans la cellule dessous : `=HYPERLINK([@URL_Ticket], [@ID])`. Excel propage
+   la formule à toute la colonne.
+3. Une colonne plus à droite, en-tête `Dossier`, formule
+   `=HYPERLINK([@Dossier_Reseau], "Dossier " & [@ID])`.
+4. Déplace les deux colonnes où tu veux dans le tableau : sélection de la
+   colonne du tableau (clic sur son en-tête), curseur sur le bord de la
+   sélection, **Maj + glisser**. Elles n'ont pas à rester à droite.
+5. Regroupe les colonnes sources `ID`, `URL_Ticket`, `Dossier_Reseau`
+   (sélection des lettres de colonnes › Data › Group) : elles restent
+   disponibles d'un clic sur le `+`, sans encombrer la vue. Ne les supprime
+   pas de la requête, les formules en dépendent.
 
-```
-=LIEN_HYPERTEXTE([@URL_Ticket]; [@ID])
-=LIEN_HYPERTEXTE([@Dossier_Reseau]; "Dossier")
-```
+Excel français : `LIEN_HYPERTEXTE` et `;` comme séparateur.
 
-Excel conserve et recopie ces colonnes à chaque actualisation (elles font
-partie du tableau, pas de la requête). Masque ensuite les deux colonnes texte.
-`LIEN_HYPERTEXTE` gère les chemins UNC sans problème.
+### Pourquoi ça tient au refresh
 
-**2. Office Script / VBA** sur l'événement d'actualisation, qui convertit les
-colonnes texte en vrais hyperliens. Plus propre visuellement, mais introduit
-une macro (donc un `.xlsm` et des questions de politique de sécurité).
+Les colonnes calculées font partie du tableau structuré, pas de la requête.
+Power Query réécrit uniquement les colonnes qu'il gère ; les autres sont
+conservées, à leur position, par la propriété *Preserve column sort/filter/
+layout* (clic droit dans le tableau › Table › External Data Properties),
+activée par défaut. Si les colonnes disparaissent après un refresh, c'est
+cette case qui a été décochée.
 
-**3. Ne rien faire.** Un chemin UNC en texte reste copiable-collable. C'est
-laid mais ça ne casse jamais.
+### Ce qui casse
 
-Recommandation : option 1. L'option 2 est le genre de dette qu'on regrette.
+- Renommer une colonne dans la requête (`ID` → autre chose) : les formules
+  passent en `#REF!`.
+- Le double-clic sur une cellule texte qui « crée le lien » : c'est la
+  correction automatique d'Excel à la saisie. Ça marche une cellule à la
+  fois et ne survit pas au refresh. Ne pas utiliser.
 
 ## Coût réel du rapport tickets
 
