@@ -1,37 +1,36 @@
 // ============================================================
-// Requête : fnCmdbTable
-// Type    : fonction (Connexion uniquement)
-// Rôle    : la CMDB complete, mise en forme. Source unique pour tous les
-//           rapports CMDB (Rpt_CMDB, Rpt_CMDBServers...). Ajouter une
-//           colonne ici la propage partout.
+// Query : fnCmdbTable
+// Type  : function (Connection only)
+// Role  : the full CMDB, shaped. Single source for every CMDB report
+//         (Rpt_CMDB, Rpt_CMDBServers...). A column added here shows up
+//         in all of them.
 //
-// Colonnes : ID, URL_CI, Name, Module, ModuleInterne, Description, Site, + UDF de
-//            Config[CmdbUdfFields].
-// ModuleInterne = module.name (ex: cmdb_physicalserver), utile pour
-// filtrer sans dependre du libelle affiche.
+// Columns: ID, CiURL, Name, Module, ModuleKey, Description, Site,
+//          + the UDFs from Config[CmdbUdfFields].
+// ModuleKey = module.name (e.g. cmdb_physicalserver): use it to filter
+// without depending on the display label.
 // ============================================================
 () as table =>
 let
     Raw  = fnSdpFetch("cmdb", null, null),
     Base = Table.FromList(Raw, Splitter.SplitByNothing(), {"r"}),
 
-    T01 = Table.AddColumn(Base, "Name",          each Record.FieldOrDefault([r], "name", null), type text),
-    T02 = Table.AddColumn(T01,  "Module",        each
+    T01 = Table.AddColumn(Base, "Name",        each Record.FieldOrDefault([r], "name", null), type text),
+    T02 = Table.AddColumn(T01,  "Module",      each
               let M = Record.FieldOrDefault([r], "module", null)
               in  if M is record
                   then Record.FieldOrDefault(M, "display_name", Record.FieldOrDefault(M, "name", null))
                   else null, type text),
-    T03 = Table.AddColumn(T02,  "ModuleInterne", each fnSdpName([r], "module"), type text),
-    T04 = Table.AddColumn(T03,  "Description",   each fnStripHtml(Record.FieldOrDefault([r], "description", null)), type text),
-    T05 = Table.AddColumn(T04,  "Site",          each fnSdpName([r], "site"), type text),
+    T03 = Table.AddColumn(T02,  "ModuleKey",   each fnSdpName([r], "module"), type text),
+    T04 = Table.AddColumn(T03,  "Description", each fnStripHtml(Record.FieldOrDefault([r], "description", null)), type text),
+    T05 = Table.AddColumn(T04,  "Site",        each fnSdpName([r], "site"), type text),
 
-    // Lien vers la fiche CI dans SDP (texte ; HYPERLINK cote Excel, cf. README).
-    T06 = Table.AddColumn(T05, "ID", each Text.From(Record.FieldOrDefault([r], "id", null)), type text),
-    // L'URL d'une fiche CI depend du module ET de l'id :
+    // Link to the CI page in SDP (text; HYPERLINK is built in Excel, see README).
+    // The URL depends on the module AND the id:
     //   /ui/cmdb_module?ci_type=cmdb_virtual_servers&mode=details&ciid=1234#details
-    // Le ci_type de l'URL n'est PAS le module.name de l'API (ex: API
-    // "cmdb_virtual_server", URL "cmdb_virtual_servers"). La correspondance
-    // est dans Config[CiUrlTypeMap] ; a defaut, on ajoute un "s".
+    // The URL ci_type is NOT the API module.name (API "cmdb_virtual_server",
+    // URL "cmdb_virtual_servers"). Mapping in Config[CiUrlTypeMap];
+    // fallback = append "s".
     fnCiUrlType = (moduleName as nullable text) as nullable text =>
         if moduleName = null then null
         else
@@ -40,12 +39,16 @@ let
             in
                 if List.IsEmpty(Hit) then moduleName & "s" else List.First(Hit){1},
 
-    T07 = Table.AddColumn(T06, "URL_CI", each
-              if [ID] = null or [ModuleInterne] = null then null
+    T06 = Table.AddColumn(T05, "ID", each Text.From(Record.FieldOrDefault([r], "id", null)), type text),
+    T07 = Table.AddColumn(T06, "CiURL", each
+              if [ID] = null or [ModuleKey] = null then null
               else Config[WebBaseURL]
-                 & Text.Replace(Text.Replace(Config[CiUrlFmt], "{type}", fnCiUrlType([ModuleInterne])), "{id}", [ID]),
+                 & Text.Replace(Text.Replace(Config[CiUrlFmt], "{type}", fnCiUrlType([ModuleKey])), "{id}", [ID]),
               type text),
 
+    // One column per entry of Config[CmdbUdfFields]: { api_name, label }.
+    // Explicit lambda (row) => rather than "each": "each" would reuse _ and
+    // shadow the loop variable u.
     WithUdf = List.Accumulate(
         Config[CmdbUdfFields],
         T07,
@@ -53,7 +56,15 @@ let
     ),
 
     Final = Table.SelectColumns(WithUdf,
-        {"ID", "URL_CI", "Name", "Module", "ModuleInterne", "Description", "Site"}
+        {"ID", "CiURL", "Name", "Module", "ModuleKey", "Description", "Site"}
         & List.Transform(Config[CmdbUdfFields], each _{1}))
 in
     Final
+
+// ------------------------------------------------------------------
+// Why fnSdpUdf rather than a cascade of ExpandRecordColumn: if a UDF is
+// empty on EVERY row of a page, SDP may omit the field entirely and
+// ExpandRecordColumn fails with "column does not exist".
+// Record.FieldOrDefault never fails. That is the kind of breakage that
+// shows up three months later, on a Monday morning.
+// ------------------------------------------------------------------

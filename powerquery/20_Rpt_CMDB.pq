@@ -1,9 +1,9 @@
 // ============================================================
-// Requête : Rpt_CMDB   (charger dans une feuille)
-// La CMDB complete. Toute la logique est dans fnCmdbTable.
+// Query : Rpt_CMDB   (load to a worksheet)
+// The full CMDB. All the logic lives in fnCmdbTable.
 // ============================================================
 let
     Source = fnCmdbTable(),
-    Final  = Table.RemoveColumns(Source, {"ModuleInterne"})
+    Final  = Table.RemoveColumns(Source, {"ModuleKey"})
 in
     Final

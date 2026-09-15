@@ -1,10 +1,10 @@
 // ============================================================
-// Requête : fnSdpName
-// Type    : fonction (Connexion uniquement)
-// Les objets lies SDP (status, technician, category...) sont des records
-// [id=..., name=...] ou null si non renseigne. Cette fonction evite
-// d'ecrire 40 fois "try [x][name] otherwise null" dans les rapports.
-// Usage : fnSdpName([r], "technician")
+// Query : fnSdpName
+// Type  : function (Connection only)
+// SDP linked objects (status, technician, category...) are records
+// [id=..., name=...] or null when unset. Avoids writing
+// "try [x][name] otherwise null" forty times in the reports.
+// Usage: fnSdpName([r], "technician")
 // ============================================================
 (rec as any, field as text) as nullable text =>
 let

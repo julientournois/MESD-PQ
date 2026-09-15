@@ -1,8 +1,8 @@
 // ============================================================
-// Requête : fnEpochToDateTime
-// Type    : fonction (Connexion uniquement)
-// SDP v3 renvoie les dates sous forme [display_value=..., value="1699887600000"]
-// ou value = epoch en MILLISECONDES (UTC). Cette fonction convertit value.
+// Query : fnEpochToDateTime
+// Type  : function (Connection only)
+// SDP v3 returns dates as [display_value=..., value="1699887600000"]
+// where value = epoch in MILLISECONDS (UTC). Converts value to local time.
 // ============================================================
 (value as any) as nullable datetime =>
 let

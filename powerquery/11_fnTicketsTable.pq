@@ -1,25 +1,28 @@
 // ============================================================
-// Requête : fnTicketsTable
-// Type    : fonction (Connexion uniquement)
-// Rôle    : LA logique du rapport tickets (colonnes, liens, dernier
-//           worklog). Chaque Rpt_Tickets* l'appelle avec son filtre.
+// Query : fnTicketsTable
+// Type  : function (Connection only)
+// Role  : THE ticket report logic (columns, links, last worklog).
+//         Every Rpt_Tickets* calls it with its own filter.
 //
-// filterBy : le record filter_by de l'API, par exemple
-//     [ name = "Ma_Vue" ]            vue par nom
-//     [ id   = "301" ]               vue par id (si le nom est refuse)
+// filterBy: the API filter_by record, for example
+//     [ name = "My_View" ]           view by name
+//     [ id   = "301" ]               view by id (if the name is rejected)
 //
-// Toute colonne ajoutee ici apparait dans tous les rapports tickets.
+// Any column added here shows up in every ticket report.
+//
+// PERFORMANCE: one HTTP call per ticket for the worklogs. While developing
+// set Config[WorklogTicketLimit] = 25.
 // ============================================================
 (filterBy as record) as table =>
 let
-    // ---------- 1. Les tickets -------------------------------------------
+    // ---------- 1. Tickets ------------------------------------------------
     ListInfo = [
         filter_by  = filterBy,
         sort_field = "id",
         sort_order = "desc",
-        // fields_required reduit fortement le volume transfere.
-        // Si ton build renvoie un 400 "invalid field", COMMENTE cette ligne :
-        // tu recevras tout l'enregistrement, le reste du code fonctionne pareil.
+        // fields_required greatly reduces the transferred volume.
+        // If your build returns 400 "invalid field", COMMENT this block out:
+        // you get the full record and the rest of the code works unchanged.
         fields_required = {
             "id", "subject", "status", "technician",
             "category", "subcategory", "created_time", "last_updated_time"
@@ -30,37 +33,36 @@ let
 
     Base0 = Table.FromList(Raw, Splitter.SplitByNothing(), {"r"}),
 
-    // Limitation optionnelle (mise au point uniquement)
+    // Optional cap (development only)
     Base = if Config[WorklogTicketLimit] = null
            then Base0
            else Table.FirstN(Base0, Config[WorklogTicketLimit]),
 
-    // ---------- 2. Colonnes plates ---------------------------------------
-    C01 = Table.AddColumn(Base, "ID",           each Text.From([r][id]), type text),
-    C02 = Table.AddColumn(C01,  "Sujet",        each fnStripHtml(Record.FieldOrDefault([r], "subject", null)), type text),
-    C03 = Table.AddColumn(C02,  "Technicien",   each fnSdpName([r], "technician"), type text),
-    C04 = Table.AddColumn(C03,  "Statut",       each fnSdpName([r], "status"), type text),
-    C05 = Table.AddColumn(C04,  "Categorie",    each fnSdpName([r], "category"), type text),
-    C06 = Table.AddColumn(C05,  "SousCategorie",each fnSdpName([r], "subcategory"), type text),
+    // ---------- 2. Flat columns ------------------------------------------
+    C01 = Table.AddColumn(Base, "ID",          each Text.From([r][id]), type text),
+    C02 = Table.AddColumn(C01,  "Subject",     each fnStripHtml(Record.FieldOrDefault([r], "subject", null)), type text),
+    C03 = Table.AddColumn(C02,  "Technician",  each fnSdpName([r], "technician"), type text),
+    C04 = Table.AddColumn(C03,  "Status",      each fnSdpName([r], "status"), type text),
+    C05 = Table.AddColumn(C04,  "Category",    each fnSdpName([r], "category"), type text),
+    C06 = Table.AddColumn(C05,  "Subcategory", each fnSdpName([r], "subcategory"), type text),
 
-    // ---------- 3. Liens (texte : voir README pour rendre cliquable) -----
-    C07 = Table.AddColumn(C06, "URL_Ticket", each
+    // ---------- 3. Links (text; HYPERLINK is built in Excel, see README) --
+    C07 = Table.AddColumn(C06, "TicketURL", each
               Config[WebBaseURL] & Config[TicketUrlFmt] & [ID] & Config[TicketUrlSuf],
               type text),
-    C08 = Table.AddColumn(C07, "Dossier_Reseau", each fnTicketFolder([ID]), type text),
+    C08 = Table.AddColumn(C07, "NetworkFolder", each fnTicketFolder([ID]), type text),
 
-    // Buffer AVANT la boucle worklogs : evite que Power Query re-evalue
-    // la liste des tickets a chaque ligne (sinon N appels deviennent N x N).
+    // Buffer BEFORE the worklog loop: prevents Power Query from re-evaluating
+    // the ticket list on every row (N calls would become N x N).
     Buffered = Table.Buffer(C08),
 
-    // ---------- 4. Dernier worklog ---------------------------------------
-    // Un appel par ticket. On recupere tous les worklogs (ils sont peu
-    // nombreux) et on choisit le plus recent en M : aucune dependance au
-    // support du tri cote serveur.
+    // ---------- 4. Last worklog -----------------------------------------
+    // One call per ticket. All worklogs are fetched (there are few) and the
+    // most recent is picked in M: no dependency on server-side sorting.
     //
-    // Un echec d'appel N'EST PAS avale : il est distingue d'un ticket sans
-    // worklog. Sinon une cle expiree ou un SDP indisponible produirait un
-    // rapport "propre" avec des trous invisibles.
+    // A failed call is NOT swallowed: it is distinguished from a ticket
+    // without worklog. Otherwise an expired key or an unavailable SDP would
+    // yield a "clean" report with invisible holes.
     W01 = Table.AddColumn(Buffered, "_wl", each
               try fnSdpFetch(
                       "requests/" & [ID] & "/worklogs",
@@ -71,7 +73,7 @@ let
     W02 = Table.AddColumn(W01, "_last", each
               if [_wl][HasError] then
                   [ dt = null,
-                    desc = "ERREUR APPEL WORKLOGS : "
+                    desc = "WORKLOG CALL ERROR: "
                          & (try [_wl][Error][Message] otherwise "?")
                          & " -- "
                          & (try Text.From([_wl][Error][Detail]) otherwise ""),
@@ -91,28 +93,28 @@ let
                       then (if List.IsEmpty(Mapped) then null else List.Last(Mapped))
                       else List.First(Sorted)),
 
-    W03 = Table.AddColumn(W02, "Date_Dernier_Worklog", each
+    W03 = Table.AddColumn(W02, "LastWorklogDate", each
               if [_last] = null then null else [_last][dt], type datetime),
 
-    // En cas d'erreur, le message brut est ecrit tel quel (pas de nettoyage
-    // HTML) pour rester lisible et filtrable sur "ERREUR".
-    W04 = Table.AddColumn(W03, "Dernier_Worklog", each
+    // On error the raw message is written as is (no HTML cleaning) so it
+    // stays readable and filterable on "WORKLOG CALL ERROR".
+    W04 = Table.AddColumn(W03, "LastWorklog", each
               if [_last] = null then null
               else if [_last][err] then [_last][desc]
               else fnStripHtml([_last][desc]), type text),
 
-    // ---------- 5. Sortie -------------------------------------------------
+    // ---------- 5. Output ------------------------------------------------
     Final = Table.SelectColumns(W04, {
         "ID",
-        "URL_Ticket",
-        "Dossier_Reseau",
-        "Technicien",
-        "Sujet",
-        "Statut",
-        "Categorie",
-        "SousCategorie",
-        "Date_Dernier_Worklog",
-        "Dernier_Worklog"
+        "TicketURL",
+        "NetworkFolder",
+        "Technician",
+        "Subject",
+        "Status",
+        "Category",
+        "Subcategory",
+        "LastWorklogDate",
+        "LastWorklog"
     })
 in
     Final

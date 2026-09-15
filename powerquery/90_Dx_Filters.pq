@@ -1,9 +1,9 @@
 // ============================================================
-// Requête : Dx_Filters   (DIAGNOSTIC - Connexion uniquement)
-// Liste les vues / filtres disponibles sur les requests, avec leur id.
-// C'est ici que tu recuperes l'identifiant de la vue si filter_by par nom
-// echoue. Selon le build, l'endpoint est "requests/filters" ou
-// "request_filters" : on essaie les deux.
+// Query : Dx_Filters   (DIAGNOSTIC - Connection only)
+// Lists the views / filters available on requests, with their id.
+// This is where you get the view id if filter_by by name fails.
+// Depending on the build the endpoint is "requests/filters" or
+// "request_filters": both are tried.
 // ============================================================
 let
     Try1 = try fnSdpFetch("requests/filters", null, null),
@@ -11,9 +11,9 @@ let
     Raw  = if Try2[HasError]
            then error Error.Record(
                     "SDP.NoFilterEndpoint",
-                    "Aucun endpoint de filtres trouve.",
-                    "Recupere l'id manuellement : ouvre ta vue dans SDP et lis "
-                  & "le parametre filterViewID / viewID dans l'URL du navigateur."
+                    "No filter endpoint found.",
+                    "Get the id manually: open your view in SDP and read the "
+                  & "filterViewID / viewID parameter in the browser URL."
                 )
            else Try2[Value],
     T = Table.FromList(Raw, Splitter.SplitByNothing(), {"r"}),

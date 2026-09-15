@@ -1,12 +1,12 @@
 // ============================================================
-// Requête : fnStripHtml
-// Type    : fonction (Connexion uniquement)
-// Rôle    : nettoyer le HTML des descriptions de worklog / notes SDP.
+// Query : fnStripHtml
+// Type  : function (Connection only)
+// Role  : clean the HTML out of SDP worklog descriptions / notes.
 //
-// Limite assumee : ce n'est pas un parseur HTML. Ca supprime les balises,
-// convertit les sauts de ligne structurels et decode les entites les plus
-// courantes (dont les accentuees francaises). Les entites numeriques exotiques
-// (&#8230; etc.) sont ajoutables dans la table Entities ci-dessous.
+// Known limit: this is not an HTML parser. It removes tags, turns
+// structural breaks into newlines and decodes the most common entities
+// (including French accented ones). Exotic numeric entities can be added
+// to the Entities table below.
 // ============================================================
 (input as any) as nullable text =>
 let
@@ -18,16 +18,16 @@ let
         if Src = null or Src = "" then null
         else
             let
-                // 1) Balises structurelles -> saut de ligne, AVANT suppression.
+                // 1) Structural tags -> newline, BEFORE stripping.
                 BlockTags = {"<br>", "<br/>", "<br />", "<BR>", "<BR/>",
                              "</p>", "</P>", "</div>", "</DIV>",
                              "</li>", "</tr>", "</h1>", "</h2>", "</h3>"},
                 WithBreaks = List.Accumulate(BlockTags, Src,
                     (s, tag) => Text.Replace(s, tag, "#(lf)")),
 
-                // 2) Suppression des balises.
-                //    Split sur "<" : le 1er fragment n'est jamais dans une balise.
-                //    Un fragment sans ">" signifie un "<" litteral (ex: "a < b").
+                // 2) Strip tags.
+                //    Split on "<": the first fragment is never inside a tag.
+                //    A fragment without ">" means a literal "<" (e.g. "a < b").
                 Parts   = Text.Split(WithBreaks, "<"),
                 Head    = List.First(Parts),
                 Tail    = List.Transform(List.Skip(Parts, 1), each
@@ -36,7 +36,7 @@ let
                               else "<" & _),
                 NoTags  = Text.Combine({Head} & Tail),
 
-                // 3) Entites HTML.
+                // 3) HTML entities.
                 Entities = {
                     {"&nbsp;", " "},   {"&#160;", " "},   {"&#xa0;", " "},
                     {"&lt;", "<"},     {"&gt;", ">"},     {"&quot;", """"},
@@ -50,15 +50,15 @@ let
                     {"&icirc;", "î"},  {"&iuml;", "ï"},   {"&ocirc;", "ô"},
                     {"&Eacute;", "É"}, {"&Egrave;", "È"}, {"&Ccedil;", "Ç"},
                     {"&deg;", "°"},    {"&euro;", "€"},   {"&laquo;", "«"},
-                    {"&raquo;", "»"},  {"&amp;", "&"}     // &amp; EN DERNIER
+                    {"&raquo;", "»"},  {"&amp;", "&"}     // &amp; LAST
                 },
                 Decoded = List.Accumulate(Entities, NoTags,
                     (s, e) => Text.Replace(s, e{0}, e{1})),
 
-                // 4) Espaces insecables residuels (U+00A0) -> espace normal.
+                // 4) Residual non-breaking spaces (U+00A0) -> regular space.
                 NoNbsp = Text.Replace(Decoded, Character.FromNumber(160), " "),
 
-                // 5) Normalisation des blancs : lignes trimmees, vides supprimees.
+                // 5) Whitespace normalisation: trimmed lines, empty ones dropped.
                 Lines   = Text.Split(Text.Replace(NoNbsp, "#(cr)", ""), "#(lf)"),
                 Trimmed = List.Transform(Lines, each Text.Trim(Text.Replace(_, "#(tab)", " "))),
                 Kept    = List.Select(Trimmed, each _ <> ""),

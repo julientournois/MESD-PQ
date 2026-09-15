@@ -1,16 +1,15 @@
 // ============================================================
-// Requête : fnSdpUdf
-// Type    : fonction (Connexion uniquement)
-// Lit un champ personnalise d'un enregistrement SDP, qu'il soit texte brut,
-// nombre, ou objet [id, name]. Ne plante jamais : renvoie null si absent.
+// Query : fnSdpUdf
+// Type  : function (Connection only)
+// Reads a custom field of an SDP record, whether it is raw text, a number,
+// or an [id, name] object. Never fails: returns null when absent.
 //
-// L'emplacement des UDF varie selon l'entite et le build. On cherche,
-// dans l'ordre :
-//   1. rec.udf_fields.<nom>          (requests, cmdb)
-//   2. rec.<nom>                     (a plat a la racine)
-//   3. rec.<n importe quel sous-record>.<nom>   (assets : rec.ci_default_fields)
-//      a un niveau de profondeur, puis deux.
-// Usage : fnSdpUdf([r], "udf_sline_609")
+// Where UDFs live depends on the entity and the build. Searched in order:
+//   1. rec.udf_fields.<name>          (requests, cmdb)
+//   2. rec.<name>                     (flat, at the root)
+//   3. rec.<any sub-record>.<name>    (assets: rec.ci_default_fields)
+//      one level deep, then two.
+// Usage: fnSdpUdf([r], "udf_xxx")
 // ============================================================
 (rec as any, name as text) as nullable text =>
 let
@@ -20,7 +19,7 @@ let
              Record.FieldOrDefault(V, "name", Record.FieldOrDefault(V, "display_value", null))
         else try Text.From(V) otherwise null,
 
-    // Cherche <name> dans un record, sinon dans ses sous-records (profondeur max).
+    // Look for <name> in a record, then in its sub-records (max depth).
     Find = (R as any, depth as number) as any =>
         if not (R is record) then null
         else if Record.HasFields(R, name) then Record.Field(R, name)

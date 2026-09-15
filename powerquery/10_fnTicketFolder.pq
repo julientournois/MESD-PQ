@@ -1,18 +1,18 @@
 // ============================================================
-// Requête : fnTicketFolder
-// Type    : fonction (Connexion uniquement)
-// Construit le chemin UNC du dossier d'un ticket, range par tranches.
+// Query : fnTicketFolder
+// Type  : function (Connection only)
+// Builds the UNC path of a ticket folder, bucketed by ranges.
 //
-// Pilote par Config :
-//   FolderRoot        "\fileserver"
-//   FolderBucketSize  1000        -> 12345 est dans la tranche 12000..12999
-//   FolderPadWidth    5           -> bornes ecrites sur 5 chiffres : 00000, 12999
-//   FolderBucketFmt   "ID_{lo}_TO_{hi}"   -> nom du dossier de tranche ;
-//                                          {lo} et {hi} sont remplaces
-//   FolderPrefix      "ID_"       -> dossier feuille : ID_12345 (sans zeros)
+// Driven by Config:
+//   FolderRoot        "\\fileserver"
+//   FolderBucketSize  1000        -> 12345 falls in bucket 12000..12999
+//   FolderPadWidth    5           -> bounds written on 5 digits: 00000, 12999
+//   FolderBucketFmt   "ID_{lo}_TO_{hi}"   -> bucket folder name; {lo} and
+//                                          {hi} are substituted
+//   FolderPrefix      "ID_"       -> leaf folder: ID_12345 (no padding)
 //
-//   12345 -> \fileserver\ID_12000_TO_12999\ID_12345
-//   7     -> \fileserver\ID_00000_TO_00999\ID_7
+//   12345 -> \\fileserver\ID_12000_TO_12999\ID_12345
+//   7     -> \\fileserver\ID_00000_TO_00999\ID_7
 // ============================================================
 (ticketId as any) as nullable text =>
 let

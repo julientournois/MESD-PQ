@@ -1,18 +1,18 @@
 // ============================================================
-// Requête : Dx_Raw   (DIAGNOSTIC - Connexion uniquement)
-// Appel BRUT, sans fnSdpFetch : renvoie le JSON complet de la premiere
-// page pour voir l'enveloppe exacte (response_status, list_info, cle des
-// donnees, forme des enregistrements).
+// Query : Dx_Raw   (DIAGNOSTIC - Connection only)
+// RAW call, bypassing fnSdpFetch: returns the full JSON of the first page
+// to inspect the exact envelope (response_status, list_info, data key,
+// record shape).
 //
-// Adapte les deux lignes Endpoint / Extra, puis clique sur les records
-// dans l'apercu pour naviguer.
+// Adjust the Endpoint / Extra lines, then click the records in the
+// preview to navigate.
 // ============================================================
 let
     Endpoint = "assets",
-    Extra    = [],   // ex : [ search_criteria = [ field = "product.product_type.name", condition = "is", value = "Laptop" ] ]
+    Extra    = [],   // e.g. [ search_criteria = [ field = "product.product_type.name", condition = "is", value = "Laptop" ] ]
 
-    // get_total_count : SDP renvoie alors list_info.total_count, a comparer
-    // avec le nombre de lignes du rapport pour detecter doublons / manquants.
+    // get_total_count: SDP then returns list_info.total_count, to compare
+    // with the report row count to detect duplicates / missing rows.
     Info     = Record.Combine({ Extra, [ row_count = 5, start_index = 1, get_total_count = true ] }),
     Payload  = Text.FromBinary(Json.FromValue([ list_info = Info ])),
     Response = Web.Contents(Config[ApiBaseURL], [
@@ -26,9 +26,10 @@ let
     ]),
     Status   = Value.Metadata(Response)[Response.Status]?,
     Body     = Json.Document(Response),
-    // Liste a plat de tous les chemins de champs du 1er enregistrement
-    // (ex: "udf_fields.udf_sline_609"). Filtre la liste dans l'apercu pour
-    // savoir OU vit un champ.
+
+    // Flat list of every field path of the first record
+    // (e.g. "udf_fields.udf_xxx"). Filter the list in the preview to find
+    // WHERE a field lives.
     DataKey  = List.First(List.Select(Record.FieldNames(Body),
                    each not List.Contains({"response_status","list_info"}, _)), null),
     FirstRec = if DataKey = null then null
@@ -40,18 +41,18 @@ let
                  let full = if prefix = "" then _ else prefix & "." & _,
                      v    = Record.Field(R, _)
                  in  if v is record then {full} & @Paths(v, full) else {full})),
-    ChampsPremierEnregistrement = if FirstRec = null then {} else Paths(FirstRec, ""),
+    FirstRecordFields = if FirstRec = null then {} else Paths(FirstRec, ""),
 
     Summary  = [
-        HttpStatus      = Status,
-        CleDonnees      = DataKey,
-        ChampsPremierEnregistrement = ChampsPremierEnregistrement,
-        PremierEnregistrement       = FirstRec,
-        InputDataEnvoye = Payload,
-        ClesReponse     = Text.Combine(Record.FieldNames(Body), ", "),
-        ResponseStatus  = Record.FieldOrDefault(Body, "response_status", null),
-        ListInfo        = Record.FieldOrDefault(Body, "list_info", null),
-        Body            = Body
+        HttpStatus        = Status,
+        DataKey           = DataKey,
+        FirstRecordFields = FirstRecordFields,
+        FirstRecord       = FirstRec,
+        InputDataSent     = Payload,
+        ResponseKeys      = Text.Combine(Record.FieldNames(Body), ", "),
+        ResponseStatus    = Record.FieldOrDefault(Body, "response_status", null),
+        ListInfo          = Record.FieldOrDefault(Body, "list_info", null),
+        Body              = Body
     ]
 in
     Summary

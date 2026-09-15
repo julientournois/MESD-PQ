@@ -27,14 +27,19 @@ Rpt_CMDB          table        -> feuille
 Rpt_CMDBServers   table        -> feuille (modules serveurs seulement)
 Rpt_Laptops       table        -> feuille
 Rpt_TicketsIT     table        -> feuille (vue de Config)
-Rpt_TicketsExemple  modele     a copier pour un autre filtre
-Dx_Filters, Dx_RequestFields, Dx_WorklogSample   diagnostic manuel
+Rpt_TicketsExample  modele     a copier pour un autre filtre
+Dx_Filters, Dx_RequestFields, Dx_WorklogSample, Dx_Raw   diagnostic manuel
 ```
 
 Ajouter un rapport = une requête de quelques lignes. Un rapport tickets avec
-un autre filtre : copier `24_Rpt_TicketsExemple.pq` et changer le `filter_by`.
+un autre filtre : copier `24_Rpt_TicketsExample.pq` et changer le `filter_by`.
 Un rapport sur un autre endpoint : appeler `fnSdpFetch` et mettre en forme.
 Zéro duplication d'URL, de clé, de pagination ou de logique de colonnes.
+
+## Langue
+
+Le code (commentaires, noms de colonnes, messages d'erreur) est **en
+anglais**. Ce README reste en français.
 
 ## Configuration : template vs local
 
@@ -93,7 +98,7 @@ sert que de référence de structure et de documentation.
 
 **Power Query ne peut pas produire de lien cliquable.** Il produit du texte.
 Il n'existe aucune option M pour ça, et le marquage « Web URL » n'existe qu'en
-Power BI. Les colonnes `URL_Ticket` et `Dossier_Reseau` sortent donc en texte,
+Power BI. Les colonnes `TicketURL` et `NetworkFolder` sortent donc en texte,
 et les liens sont fabriqués **dans le tableau Excel**, par des colonnes
 calculées. Vérifié : elles survivent au refresh.
 
@@ -102,27 +107,27 @@ calculées. Vérifié : elles survivent au refresh.
 1. Sur la feuille de `Rpt_TicketsIT`, clique dans la première cellule vide à
    droite de la ligne d'en-tête du tableau. Tape `Ticket`, Entrée : le
    tableau s'étend d'une colonne.
-2. Dans la cellule dessous : `=HYPERLINK([@URL_Ticket], [@ID])`. Excel propage
+2. Dans la cellule dessous : `=HYPERLINK([@TicketURL], [@ID])`. Excel propage
    la formule à toute la colonne.
 3. Une colonne plus à droite, en-tête `Dossier`, formule
-   `=HYPERLINK([@Dossier_Reseau], "Dossier " & [@ID])`.
+   `=HYPERLINK([@NetworkFolder], "Dossier " & [@ID])`.
 4. Déplace les deux colonnes où tu veux dans le tableau : sélection de la
    colonne du tableau (clic sur son en-tête), curseur sur le bord de la
    sélection, **Maj + glisser**. Elles n'ont pas à rester à droite.
-5. Regroupe les colonnes sources `ID`, `URL_Ticket`, `Dossier_Reseau`
+5. Regroupe les colonnes sources `ID`, `TicketURL`, `NetworkFolder`
    (sélection des lettres de colonnes › Data › Group) : elles restent
    disponibles d'un clic sur le `+`, sans encombrer la vue. Ne les supprime
    pas de la requête, les formules en dépendent.
 
 Excel français : `LIEN_HYPERTEXTE` et `;` comme séparateur.
 
-Même principe sur `Rpt_Laptops` avec la colonne `URL_Asset` :
-`=HYPERLINK([@URL_Asset], [@Nom])`. Le format de l'URL d'une fiche asset est
+Même principe sur `Rpt_Laptops` avec la colonne `AssetURL` :
+`=HYPERLINK([@AssetURL], [@Name])`. Le format de l'URL d'une fiche asset est
 dans `Config[AssetUrlFmt]` / `AssetUrlSuf` — à copier depuis le navigateur,
 il varie selon la version de SDP.
 
-Et sur `Rpt_CMDB` / `Rpt_CMDBServers` avec `URL_CI` :
-`=HYPERLINK([@URL_CI], [@Name])`. `Config[CiUrlFmt]` est un modèle avec `{type}`
+Et sur `Rpt_CMDB` / `Rpt_CMDBServers` avec `CiURL` :
+`=HYPERLINK([@CiURL], [@Name])`. `Config[CiUrlFmt]` est un modèle avec `{type}`
 (nom interne du module) et `{id}`, car l'URL d'un CI dépend des deux.
 
 ### Pourquoi ça tient au refresh

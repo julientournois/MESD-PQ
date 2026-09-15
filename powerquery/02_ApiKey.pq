@@ -1,26 +1,32 @@
 // ============================================================
-// Requête : ApiKey
-// Type    : requête texte (Connexion uniquement)
+// Query : ApiKey
+// Type  : text query (Connection only)
 // ============================================================
 //
-// TROIS OPTIONS, de la pire a la meilleure.
+// THREE OPTIONS, worst to best.
 //
-// --- Option A : en dur (ce que tu fais aujourd'hui) -------------------
-// La cle technicien part avec le fichier. Quiconque recoit le .xlsx
-// obtient tes droits sur ServiceDesk. A eviter des que le classeur circule.
+// --- Option A: hard-coded ---------------------------------------------
+// The technician key travels with the workbook. Anyone receiving the .xlsx
+// gets your SDP rights. Avoid as soon as the workbook circulates.
 //
 //   "XXXXXXXXXXXXXXXX"
 //
-// --- Option B : parametre de requete ---------------------------------
-// Donnees > Obtenir des donnees > Autres sources > Requete vide,
-// puis Gerer les parametres. Plus propre a maintenir, mais la valeur
-// reste stockee en clair dans le classeur. Meme risque qu'en A.
+// --- Option B: query parameter ---------------------------------------
+// Data > Get Data > Other Sources > Blank Query, then Manage Parameters.
+// Cleaner to maintain, but the value is still stored in clear text in the
+// workbook. Same risk as A.
 //
-// --- Option C : fichier local hors classeur (recommande) -------------
-// La cle vit dans un fichier que tu ne partages pas. Le classeur ne
-// contient que le chemin. Chaque poste autorise depose son propre fichier.
-// Cree C:\SDP\technician.key (une seule ligne, pas de retour a la ligne
-// final si possible) et utilise le code ci-dessous.
+// --- Option C: local file outside the workbook (recommended) ---------
+// The key lives in a file you do not share. The workbook only holds the
+// path. Each authorized workstation drops its own file.
+// Create C:\SDP\technician.key (single line, ideally no trailing newline)
+// and use the code below.
+//
+// Note: a path relative to the workbook is NOT possible. Power Query has no
+// notion of "current folder" and no function returning the host workbook
+// path. The only workaround is a named cell computed by Excel with
+// CELL("filename"), read back via Excel.CurrentWorkbook() - fragile
+// (unsaved workbook, OneDrive/SharePoint URLs). Not implemented here.
 
 let
     KeyPath = "C:\SDP\technician.key",
@@ -28,8 +34,8 @@ let
     Key     = if Raw = null
               then error Error.Record(
                         "SDP.MissingKey",
-                        "Cle technicien introuvable.",
-                        "Cree le fichier " & KeyPath & " contenant uniquement la cle technicien SDP."
+                        "Technician key not found.",
+                        "Create the file " & KeyPath & " containing only the SDP technician key."
                    )
               else Text.Trim(Text.Replace(Text.Replace(Raw, "#(cr)", ""), "#(lf)", ""))
 in

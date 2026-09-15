@@ -1,7 +1,7 @@
 // ============================================================
-// Requête : Rpt_TicketsIT   (charger dans une feuille)
-// Tickets de la vue definie dans Config (TicketFilterName / TicketFilterId).
-// Toute la logique est dans fnTicketsTable.
+// Query : Rpt_TicketsIT   (load to a worksheet)
+// Tickets of the view defined in Config (TicketFilterName / TicketFilterId).
+// All the logic lives in fnTicketsTable.
 // ============================================================
 let
     FilterBy = if Config[TicketFilterId] <> null

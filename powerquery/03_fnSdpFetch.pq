@@ -1,16 +1,16 @@
 // ============================================================
-// Requête : fnSdpFetch
-// Type    : fonction (Connexion uniquement)
-// Rôle    : LE seul endroit du classeur qui parle HTTP.
-//           Pagination, auth, erreurs, detection de la cle de donnees.
+// Query : fnSdpFetch
+// Type  : function (Connection only)
+// Role  : THE only place in the workbook that speaks HTTP.
+//         Pagination, auth, errors, data-key detection.
 //
-// Usage :
+// Usage:
 //   fnSdpFetch("cmdb", null, null)
 //   fnSdpFetch("assets", [search_criteria = [...]], "assets")
 //   fnSdpFetch("requests/12345/worklogs", null, "worklogs")
 //
-// Retour : liste de records (JSON brut, non aplati). L'aplatissement
-//          est la responsabilite de la requete de rapport.
+// Returns: a list of records (raw JSON, not flattened). Flattening is the
+//          report's responsibility.
 // ============================================================
 (
     endpoint as text,
@@ -24,12 +24,12 @@ let
 
     GetPage = (startIndex as number) as record =>
         let
-            // Record.Combine : la derniere occurrence gagne.
-            //  - un tri par defaut sur "id" : sans ordre STABLE, SDP pagine
-            //    n'importe comment (doublons en page N, lignes manquantes en
-            //    page N+1). L'appelant peut le remplacer via listInfo.
-            //  - row_count / start_index sont imposes en dernier : l'appelant
-            //    ne peut pas casser la pagination.
+            // Record.Combine: last occurrence wins.
+            //  - default sort on "id": without a STABLE order, SDP paginates
+            //    randomly (duplicates on page N, missing rows on page N+1).
+            //    The caller may override it via listInfo.
+            //  - row_count / start_index are forced last: the caller cannot
+            //    break pagination.
             Info = Record.Combine({
                 [ sort_field = "id", sort_order = "asc" ],
                 Extra,
@@ -38,9 +38,8 @@ let
 
             Payload = Text.FromBinary(Json.FromValue([ list_info = Info ])),
 
-            // URL de base STATIQUE + RelativePath : indispensable pour que le
-            // rafraichissement planifie fonctionne et pour ne pas re-demander
-            // les identifiants a chaque ouverture.
+            // STATIC base URL + RelativePath: required for scheduled refresh
+            // to work and to avoid credential prompts on every open.
             Response = Web.Contents(BaseURL, [
                 RelativePath = endpoint,
                 Query        = [ input_data = Payload ],
@@ -56,29 +55,29 @@ let
             Body = if Status <> null and Status >= 400 then
                        error Error.Record(
                            "SDP.HttpError",
-                           "HTTP " & Text.From(Status) & " sur /" & endpoint,
-                           // le corps SDP contient le vrai motif (champ inconnu,
-                           // filtre inexistant, cle invalide...)
-                           try Text.FromBinary(Response) otherwise "(corps illisible)"
+                           "HTTP " & Text.From(Status) & " on /" & endpoint,
+                           // the SDP body carries the real reason (unknown
+                           // field, missing view, invalid key...)
+                           try Text.FromBinary(Response) otherwise "(unreadable body)"
                        )
                    else Json.Document(Response),
 
-            // Detection de la cle porteuse des donnees : "cmdb", "assets",
-            // "requests", "worklogs"... On exclut les cles d'enveloppe.
+            // Detect the key carrying the rows: "cmdb", "assets", "requests",
+            // "worklogs"... Envelope keys are excluded.
             Envelope = {"response_status", "list_info", "search_criteria"},
             Keys     = Record.FieldNames(Body),
             Resolved = if dataKey <> null then dataKey
                        else List.First(List.Select(Keys, each not List.Contains(Envelope, _)), null),
 
-            // Cle demandee explicitement mais absente : on ECHOUE, on ne
-            // renvoie pas une table vide en silence.
+            // Key explicitly requested but absent: FAIL, do not return an
+            // empty table silently.
             Rows = if Resolved = null then {}
                    else if not Record.HasFields(Body, Resolved) then
                        error Error.Record(
                            "SDP.DataKeyNotFound",
-                           "La cle """" & Resolved & """" est absente de la reponse de /" & endpoint,
-                           "Cles presentes : " & Text.Combine(Keys, ", ")
-                         & "  |  response_status : "
+                           "Key """" & Resolved & """" is missing from the /" & endpoint & " response",
+                           "Keys present: " & Text.Combine(Keys, ", ")
+                         & "  |  response_status: "
                          & (try Text.FromBinary(Json.FromValue(Body[response_status])) otherwise "?")
                        )
                    else
@@ -89,7 +88,7 @@ let
         in
             [ Rows = Rows, HasMore = HasMore, Next = startIndex + PageSize ],
 
-    // Pagination pilotee par has_more_rows : aucun appel superflu.
+    // Pagination driven by has_more_rows: no superfluous call.
     Pages = List.Generate(
         () => [ P = GetPage(1) ],
         each [P] <> null,
