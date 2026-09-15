@@ -141,6 +141,11 @@ l'API, pas un choix de conception.
 | 200 | 201 | 2–4 min |
 | 500 | 501 | 5–12 min |
 
+Mesure réelle (septembre 2026, vue complète, sans limite) : **15 s**. Les
+estimations ci-dessus sont donc pessimistes sur cette instance ; elles
+restent l'ordre de grandeur à attendre si le volume de tickets ouverts
+explose.
+
 Si ça devient insupportable, les leviers, du plus efficace au moins :
 
 1. **Resserrer le filtre** côté SDP (statuts réellement ouverts).
