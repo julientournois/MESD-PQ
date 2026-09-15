@@ -37,7 +37,8 @@ let
     // naming "udf_fields" -> the block comes back empty. So as soon as a
     // report asks for a UDF, fields_required is dropped and the full record
     // is fetched. Non-UDF extra fields are simply appended.
-    NeedsUdf    = List.MatchesAny(Extras, each _[kind] = "udf" or _[kind] = "udfdate"),
+    NeedsUdf    = List.MatchesAny(Extras, each _[kind] = "udf" or _[kind] = "udfdate"
+                                              or Text.StartsWith(_[field], "udf_")),
     ExtraFields = List.Distinct(List.Transform(Extras, each _[field])),
 
     BaseFields = {
@@ -77,17 +78,26 @@ let
     // ---------- 2b. Report-specific columns ------------------------------
     // Explicit lambda (row) => so the loop variable x is not shadowed by
     // the _ of "each".
-    fnUdfRaw = (rec as any, name as text) as any =>
-        if rec is record and Record.HasFields(rec, "udf_fields")
-        then Record.FieldOrDefault(rec[udf_fields], name, null) else null,
+    // Raw value of a field: at the root first, then under udf_fields.
+    // Makes "date"/"udfdate" and "text"/"udf" interchangeable: a wrong kind
+    // no longer yields a silent null.
+    fnRaw = (rec as any, name as text) as any =>
+        if not (rec is record) then null
+        else if Record.HasFields(rec, name) then Record.Field(rec, name)
+        else if Record.HasFields(rec, "udf_fields") and (rec[udf_fields] is record)
+             and Record.HasFields(rec[udf_fields], name) then Record.Field(rec[udf_fields], name)
+        else null,
 
     fnExtra = (rec as any, x as record) as any =>
-        if x[kind] = "name"    then fnSdpName(rec, x[field])
-        else if x[kind] = "date"    then fnSdpDate(Record.FieldOrDefault(rec, x[field], null))
-        else if x[kind] = "udf"     then fnSdpUdf(rec, x[field])
-        else if x[kind] = "udfdate" then fnSdpDate(fnUdfRaw(rec, x[field]))
-        else (let v = Record.FieldOrDefault(rec, x[field], null)
-              in if v = null then null else try Text.From(v) otherwise null),
+        let v = fnRaw(rec, x[field]) in
+        if x[kind] = "date" or x[kind] = "udfdate" then fnSdpDate(v)
+        else if x[kind] = "name" or x[kind] = "udf" then
+            (if v = null then null
+             else if v is record then Record.FieldOrDefault(v, "name", Record.FieldOrDefault(v, "display_value", null))
+             else try Text.From(v) otherwise null)
+        else (if v = null then null
+              else if v is record then Record.FieldOrDefault(v, "display_value", Record.FieldOrDefault(v, "name", null))
+              else try Text.From(v) otherwise null),
 
     C06x = List.Accumulate(Extras, C06, (tbl, x) =>
                Table.AddColumn(tbl, x[label], (row) => fnExtra(row[r], x),
