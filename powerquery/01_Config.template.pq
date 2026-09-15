@@ -39,8 +39,11 @@
     // --- Dossiers reseau --------------------------------------------------
     FolderRoot   = "\fileserver",
     FolderPrefix = "ID_",
-    // Les dossiers sont ranges par tranches : \fileserver\ID_10000_TO_19999\ID_12345
-    FolderBucketSize = 10000,
+    // Tranches de dossiers : 12345 -> \fileserver\ID_12000_TO_12999\ID_12345
+    FolderBucketSize = 1000,
+    FolderPadWidth   = 5,                 // bornes sur 5 chiffres : 00000_TO_00999
+    FolderBucketFmt  = "ID_{lo}_TO_{hi}", // copie le nom REEL d'un dossier de tranche ici,
+                                          // en remplacant les nombres par {lo} et {hi}
 
     // --- Filtre des tickets ----------------------------------------------
     // Nom de la vue SDP. Si l'API refuse le nom, il faut son id.

@@ -176,13 +176,15 @@ rapides.
 ## Convention de dossier réseau
 
 Les dossiers de tickets sont rangés par tranches de `FolderBucketSize`
-(10 000 par défaut) :
+(1 000), bornes complétées sur `FolderPadWidth` chiffres (5) :
 
 ```
-\fileserver\ID_10000_TO_19999\ID_12345
-\fileserver\ID_00000_TO_09999\ID_7
+\fileserver\ID_12000_TO_12999\ID_12345
+\fileserver\ID_00000_TO_00999\ID_7
 ```
 
-La construction est dans `fnTicketFolder`. Les bornes sont complétées par
-des zéros sur autant de chiffres que `FolderBucketSize` ; le dossier feuille
-ne l'est pas.
+Le nom du dossier de tranche est un modèle dans `Config[FolderBucketFmt]`
+(`ID_{lo}_TO_{hi}`) : copie le nom réel d'un dossier depuis l'Explorateur en
+remplaçant les nombres par `{lo}` et `{hi}`. Le dossier feuille est
+`FolderPrefix` + numéro, sans complément. La construction est dans
+`fnTicketFolder`.

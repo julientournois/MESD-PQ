@@ -1,14 +1,18 @@
 // ============================================================
 // Requête : fnTicketFolder
 // Type    : fonction (Connexion uniquement)
-// Construit le chemin UNC du dossier d'un ticket. Les dossiers sont
-// ranges par tranches de Config[FolderBucketSize] :
-//     12345  ->  \fileserver\ID_10000_TO_19999\ID_12345
-//     7      ->  \fileserver\ID_00000_TO_09999\ID_7
-//     20000  ->  \fileserver\ID_20000_TO_29999\ID_20000
-// Les bornes de tranche sont completees par des zeros a gauche sur autant
-// de chiffres que la taille de tranche (10000 -> 5). Le nom du dossier
-// feuille (ID_7) n'est pas complete.
+// Construit le chemin UNC du dossier d'un ticket, range par tranches.
+//
+// Pilote par Config :
+//   FolderRoot        "\fileserver"
+//   FolderBucketSize  1000        -> 12345 est dans la tranche 12000..12999
+//   FolderPadWidth    5           -> bornes ecrites sur 5 chiffres : 00000, 12999
+//   FolderBucketFmt   "ID_{lo}_TO_{hi}"   -> nom du dossier de tranche ;
+//                                          {lo} et {hi} sont remplaces
+//   FolderPrefix      "ID_"       -> dossier feuille : ID_12345 (sans zeros)
+//
+//   12345 -> \fileserver\ID_12000_TO_12999\ID_12345
+//   7     -> \fileserver\ID_00000_TO_00999\ID_7
 // ============================================================
 (ticketId as any) as nullable text =>
 let
@@ -17,13 +21,12 @@ let
         else
             let
                 Size   = Config[FolderBucketSize],
-                Prefix = Config[FolderPrefix],
+                Width  = Config[FolderPadWidth],
                 Lower  = Number.RoundDown(N / Size) * Size,
                 Upper  = Lower + Size - 1,
-                Width  = Text.Length(Text.From(Size)),
                 Pad    = (x as number) as text => Text.PadStart(Text.From(x), Width, "0"),
-                Bucket = Prefix & Pad(Lower) & "_TO_" & Pad(Upper),
-                Leaf   = Prefix & Text.From(N)
+                Bucket = Text.Replace(Text.Replace(Config[FolderBucketFmt], "{lo}", Pad(Lower)), "{hi}", Pad(Upper)),
+                Leaf   = Config[FolderPrefix] & Text.From(N)
             in
                 Config[FolderRoot] & "\" & Bucket & "\" & Leaf
 in
