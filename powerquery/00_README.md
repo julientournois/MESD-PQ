@@ -161,9 +161,9 @@ Les dossiers de tickets sont rangés par tranches de `FolderBucketSize`
 
 ```
 \fileserver\ID_10000_TO_19999\ID_12345
-\fileserver\ID_0_TO_9999\ID_7
+\fileserver\ID_00000_TO_09999\ID_7
 ```
 
-La construction est dans `fnTicketFolder`. Hypothèse à vérifier sur le
-partage réel : les bornes ne sont pas complétées par des zéros. Si tu vois
-`ID_00000_TO_09999`, adapte la fonction `Pad` dans `fnTicketFolder`.
+La construction est dans `fnTicketFolder`. Les bornes sont complétées par
+des zéros sur autant de chiffres que `FolderBucketSize` ; le dossier feuille
+ne l'est pas.
